@@ -39,7 +39,7 @@ export default function Dashboard({ onNavigate }) {
                     Helix<span className="text-cyan-500">Twin</span>
                 </h1>
                 <p className="text-slate-400 text-lg max-w-2xl mx-auto">
-                    The world's first Generative Systems Engineering environment.
+                    A Generative Systems Engineering Platform for Autonomous Medical Device Design
                     Select a layer to begin the autonomous design lifecycle.
                 </p>
             </div>
