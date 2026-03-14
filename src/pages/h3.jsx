@@ -105,12 +105,14 @@ const PcbComponent = ({ comp, showThermal, isSelected }) => {
   );
 };
 
-// --- CHART COMPONENT (MOVED TO MAIN CANVAS) ---
+// --- MASSIVE SVG CHART COMPONENT ---
 const OptimizationChartLarge = () => {
+  // Generate stable mock data using useMemo
   const points = useMemo(() => {
-    return Array.from({ length: 250 }).map(() => {
-      const mass = Math.random() * 6 + 2; // 2 to 8 kg
-      const life = (mass * 1.2) + (Math.random() * 6 - 3); // Spread around a linear correlation
+    return Array.from({ length: 300 }).map(() => {
+      const mass = Math.random() * 8 + 1; // Spanning 1kg to 9kg for full horizontal scaling
+      // Strong positive correlation between mass (battery size) and life
+      const life = (mass * 1.5) + (Math.random() * 5 - 2.5); 
       const feasible = mass <= 5.0 && life >= 4.0;
       return { x: mass, y: Math.max(0, Math.min(15, life)), feasible };
     });
@@ -118,13 +120,14 @@ const OptimizationChartLarge = () => {
 
   const optimal = { x: 4.8, y: 11.5 }; 
 
-  // Inner SVG dimensions for perfect responsive scaling
+  // Chart Dimensions (Pixel Perfect Scaling to match the 850x550 container)
   const width = 850;
-  const height = 480;
-  const margin = { top: 40, right: 50, bottom: 60, left: 60 };
+  const height = 550;
+  const margin = { top: 40, right: 50, bottom: 80, left: 80 }; // Increased bottom margin
   const plotWidth = width - margin.left - margin.right;
   const plotHeight = height - margin.top - margin.bottom;
 
+  // Scale Functions (Map Data to Pixels)
   const xScale = (val) => margin.left + (val / 10) * plotWidth;
   const yScale = (val) => margin.top + plotHeight - (val / 15) * plotHeight;
 
@@ -137,14 +140,14 @@ const OptimizationChartLarge = () => {
           <p className="text-xs text-slate-500 mt-0.5 font-medium">Architect Agent: System Mass vs. Battery Autonomy</p>
         </div>
         <div className="flex gap-4">
-           <div className="flex items-center gap-2 text-xs font-bold text-slate-500"><span className="w-3 h-3 rounded-full bg-slate-200"></span> Infeasible</div>
+           <div className="flex items-center gap-2 text-xs font-bold text-slate-500"><span className="w-3 h-3 rounded-full bg-slate-300"></span> Infeasible</div>
            <div className="flex items-center gap-2 text-xs font-bold text-sky-600"><span className="w-3 h-3 rounded-full bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.5)]"></span> Feasible Space</div>
            <div className="flex items-center gap-2 text-xs font-bold text-emerald-600"><span className="w-4 h-4 rounded-full bg-emerald-500 border-2 border-white shadow-md"></span> Selected Optimal</div>
         </div>
       </div>
 
-      {/* SVG Canvas - Fully expanded and correctly plotted */}
-      <div className="flex-1 w-full h-full relative bg-slate-50 flex items-center justify-center p-4">
+      {/* SVG Canvas - Pure scalable vector graphics */}
+      <div className="flex-1 w-full h-full relative bg-slate-50 flex items-center justify-center p-0">
         <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet" className="overflow-visible">
           
           {/* Feasible Zone Background */}
@@ -154,41 +157,45 @@ const OptimizationChartLarge = () => {
              width={xScale(5) - xScale(0)} 
              height={yScale(4) - yScale(15)} 
              fill="#f0f9ff" 
-             rx="4" 
+             rx="8" 
           />
           
           {/* Grid Lines & Axis Values */}
           {[0, 2, 4, 6, 8, 10].map(val => (
             <g key={`x-${val}`}>
-               <line x1={xScale(val)} y1={yScale(0)} x2={xScale(val)} y2={yScale(15)} stroke="#e2e8f0" strokeWidth="2" />
-               <text x={xScale(val)} y={yScale(0) + 24} fill="#64748b" fontSize="12" textAnchor="middle" fontWeight="bold">{val}kg</text>
+               <line x1={xScale(val)} y1={yScale(0)} x2={xScale(val)} y2={yScale(15)} stroke="#e2e8f0" strokeWidth="1.5" />
+               <line x1={xScale(val)} y1={yScale(0)} x2={xScale(val)} y2={yScale(0) + 8} stroke="#94a3b8" strokeWidth="2" />
+               <text x={xScale(val)} y={yScale(0) + 24} fill="#64748b" fontSize="13" textAnchor="middle" fontWeight="bold">{val}kg</text>
             </g>
           ))}
+          
           {[0, 3, 6, 9, 12, 15].map(val => (
             <g key={`y-${val}`}>
-               <line x1={xScale(0)} y1={yScale(val)} x2={xScale(10)} y2={yScale(val)} stroke="#e2e8f0" strokeWidth="2" />
-               <text x={xScale(0) - 15} y={yScale(val) + 4} fill="#64748b" fontSize="12" textAnchor="end" fontWeight="bold">{val}h</text>
+               <line x1={xScale(0)} y1={yScale(val)} x2={xScale(10)} y2={yScale(val)} stroke="#e2e8f0" strokeWidth="1.5" />
+               <line x1={xScale(0) - 8} y1={yScale(val)} x2={xScale(0)} y2={yScale(val)} stroke="#94a3b8" strokeWidth="2" />
+               <text x={xScale(0) - 15} y={yScale(val) + 4} fill="#64748b" fontSize="13" textAnchor="end" fontWeight="bold">{val}h</text>
             </g>
           ))}
 
           {/* Axes Base Lines */}
-          <line x1={xScale(0)} y1={yScale(0)} x2={xScale(10)} y2={yScale(0)} stroke="#94a3b8" strokeWidth="2" />
-          <line x1={xScale(0)} y1={yScale(0)} x2={xScale(0)} y2={yScale(15)} stroke="#94a3b8" strokeWidth="2" />
+          <line x1={xScale(0)} y1={yScale(0)} x2={xScale(10)} y2={yScale(0)} stroke="#475569" strokeWidth="3" strokeLinecap="round" />
+          <line x1={xScale(0)} y1={yScale(0)} x2={xScale(0)} y2={yScale(15)} stroke="#475569" strokeWidth="3" strokeLinecap="round" />
 
-          {/* Axis Titles */}
-          <text x={xScale(5)} y={yScale(0) + 48} fill="#334155" fontSize="14" textAnchor="middle" fontWeight="900" letterSpacing="1">SYSTEM MASS (kg)</text>
-          <text x={xScale(0) - 45} y={yScale(7.5)} fill="#334155" fontSize="14" textAnchor="middle" fontWeight="900" letterSpacing="1" transform={`rotate(-90, ${xScale(0) - 45}, ${yScale(7.5)})`}>BATTERY LIFE (h)</text>
+          {/* Axis Titles (Correctly placed and scaled to avoid clipping) */}
+          <text x={xScale(5)} y={yScale(0) + 60} fill="#1e293b" fontSize="16" textAnchor="middle" fontWeight="900" letterSpacing="2">SYSTEM MASS (kg)</text>
+          <text x={xScale(0) - 55} y={yScale(7.5)} fill="#1e293b" fontSize="16" textAnchor="middle" fontWeight="900" letterSpacing="2" transform={`rotate(-90, ${xScale(0) - 55}, ${yScale(7.5)})`}>BATTERY LIFE (h)</text>
 
-          {/* Constraint Lines & Labels */}
-          <line x1={xScale(5)} y1={yScale(0)} x2={xScale(5)} y2={yScale(15)} stroke="#ef4444" strokeWidth="2" strokeDasharray="6 4" />
-          <rect x={xScale(5) + 8} y={yScale(14) - 14} width="115" height="22" fill="#fef2f2" rx="4" />
-          <text x={xScale(5) + 14} y={yScale(14) + 1} fill="#ef4444" fontSize="12" fontWeight="bold">Max Mass (5kg)</text>
+          {/* Constraint Line: Max Mass */}
+          <line x1={xScale(5)} y1={yScale(0)} x2={xScale(5)} y2={yScale(15)} stroke="#ef4444" strokeWidth="2.5" strokeDasharray="8 6" />
+          <rect x={xScale(5) + 12} y={yScale(14.5) - 16} width="135" height="28" fill="#fef2f2" rx="6" stroke="#fecaca" strokeWidth="1" />
+          <text x={xScale(5) + 22} y={yScale(14.5) + 3} fill="#ef4444" fontSize="13" fontWeight="bold">Max Mass (5kg)</text>
           
-          <line x1={xScale(0)} y1={yScale(4)} x2={xScale(10)} y2={yScale(4)} stroke="#f59e0b" strokeWidth="2" strokeDasharray="6 4" />
-          <rect x={xScale(9) - 86} y={yScale(4) - 24} width="96" height="22" fill="#fffbeb" rx="4" />
-          <text x={xScale(9) - 80} y={yScale(4) - 9} fill="#f59e0b" fontSize="12" fontWeight="bold">Min Life (4h)</text>
+          {/* Constraint Line: Min Life */}
+          <line x1={xScale(0)} y1={yScale(4)} x2={xScale(10)} y2={yScale(4)} stroke="#f59e0b" strokeWidth="2.5" strokeDasharray="8 6" />
+          <rect x={xScale(9.8) - 110} y={yScale(4) - 34} width="110" height="28" fill="#fffbeb" rx="6" stroke="#fde68a" strokeWidth="1" />
+          <text x={xScale(9.8) - 55} y={yScale(4) - 15} fill="#f59e0b" fontSize="13" fontWeight="bold" textAnchor="middle">Min Life (4h)</text>
 
-          {/* Scatter Points */}
+          {/* Scatter Points (The raw data) */}
           {points.map((p, i) => (
             <circle 
               key={i} 
@@ -201,14 +208,14 @@ const OptimizationChartLarge = () => {
           ))}
 
           {/* Optimal Point Visualization */}
-          <circle cx={xScale(optimal.x)} cy={yScale(optimal.y)} r="16" fill="#10b981" opacity="0.2" className="animate-ping" />
-          <circle cx={xScale(optimal.x)} cy={yScale(optimal.y)} r="8" fill="#10b981" stroke="white" strokeWidth="2" className="shadow-2xl drop-shadow-md" />
+          <circle cx={xScale(optimal.x)} cy={yScale(optimal.y)} r="20" fill="#10b981" opacity="0.25" className="animate-ping" />
+          <circle cx={xScale(optimal.x)} cy={yScale(optimal.y)} r="9" fill="#10b981" stroke="white" strokeWidth="3" className="shadow-2xl drop-shadow-lg" />
           
-          {/* Tooltip Tag */}
-          <path d={`M ${xScale(optimal.x)} ${yScale(optimal.y)} L ${xScale(optimal.x) + 30} ${yScale(optimal.y) - 30}`} stroke="#047857" strokeWidth="2" />
-          <g transform={`translate(${xScale(optimal.x) + 30}, ${yScale(optimal.y) - 45})`}>
-            <rect x="0" y="0" width="130" height="32" fill="#047857" rx="6" className="drop-shadow-lg" />
-            <text x="65" y="20" fill="white" fontSize="12" fontWeight="bold" textAnchor="middle">Selected Design</text>
+          {/* Tooltip Tag for Optimal Point */}
+          <path d={`M ${xScale(optimal.x)} ${yScale(optimal.y)} L ${xScale(optimal.x) + 40} ${yScale(optimal.y) - 40}`} stroke="#047857" strokeWidth="2" />
+          <g transform={`translate(${xScale(optimal.x) + 40}, ${yScale(optimal.y) - 60})`}>
+            <rect x="0" y="0" width="160" height="40" fill="#047857" rx="8" className="drop-shadow-xl" />
+            <text x="80" y="24" fill="white" fontSize="14" fontWeight="bold" textAnchor="middle">Selected Design</text>
           </g>
 
         </svg>
@@ -275,7 +282,7 @@ export default function HelixTwinL3() {
     <div className="flex h-screen bg-slate-50 text-slate-800 font-sans overflow-hidden">
       
       {/* SIDEBAR NAVIGATION */}
-      <div className={`${isSidebarOpen ? 'w-72' : 'w-16'} bg-white border-r border-slate-200 transition-all duration-300 flex flex-col z-30 shadow-sm`}>
+      <div className={`${isSidebarOpen ? 'w-72' : 'w-16'} bg-white border-r border-slate-200 transition-all duration-300 flex flex-col z-30 shadow-sm shrink-0`}>
         <div className="p-4 border-b border-slate-100 flex items-center justify-between">
           {isSidebarOpen && (
             <div className="flex items-center gap-2">
@@ -348,11 +355,11 @@ export default function HelixTwinL3() {
       </div>
 
       {/* MAIN CONTENT AREA */}
-      <div className="flex-1 flex flex-col h-full bg-slate-100 relative">
+      <div className="flex-1 flex flex-col h-full bg-slate-100 relative min-w-0">
          
          {/* TOP HEADER */}
-         <div className="h-16 bg-white/90 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-6 shadow-sm z-20 sticky top-0 overflow-x-auto">
-            <div className="flex gap-2 bg-slate-100 p-1.5 rounded-xl border border-slate-200">
+         <div className="h-16 bg-white/90 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-6 shadow-sm z-20 sticky top-0 overflow-x-auto shrink-0">
+            <div className="flex gap-2 bg-slate-100 p-1.5 rounded-xl border border-slate-200 shrink-0">
                {tabs.map(tab => (
                   <button
                     key={tab.id} onClick={() => setActiveTab(tab.id)}
@@ -364,8 +371,8 @@ export default function HelixTwinL3() {
                ))}
             </div>
             
-            <div className="flex items-center gap-4">
-               <div className="hidden md:flex items-center gap-4 text-xs font-mono text-slate-500 bg-slate-50 px-4 py-2 rounded-xl border border-slate-200 shadow-inner">
+            <div className="flex items-center gap-4 shrink-0">
+               <div className="hidden xl:flex items-center gap-4 text-xs font-mono text-slate-500 bg-slate-50 px-4 py-2 rounded-xl border border-slate-200 shadow-inner">
                   <span>P_Est: <strong className="text-orange-600">7.15W</strong></span>
                   <div className="w-px h-4 bg-slate-300"></div>
                   <span>Mass: <strong className="text-sky-600">4.8kg</strong></span>
@@ -377,18 +384,18 @@ export default function HelixTwinL3() {
          </div>
 
          {/* CANVAS WORKSPACE */}
-         <div className="flex-1 overflow-hidden relative flex flex-col items-center justify-center p-8 bg-[radial-gradient(#cbd5e1_1.5px,transparent_1.5px)] [background-size:24px_24px]">
+         <div className="flex-1 overflow-auto relative flex items-center justify-center p-8 bg-[radial-gradient(#cbd5e1_1.5px,transparent_1.5px)] [background-size:24px_24px]">
             
             {/* --- VIEW 1: OPTIMIZATION CHART --- */}
             {activeTab === 'optimization' && (
-               <div className="relative w-[850px] h-[550px] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col">
+               <div className="w-[850px] h-[550px] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col shrink-0">
                   <OptimizationChartLarge />
                </div>
             )}
 
             {/* --- VIEW 2: ECAD (DARK MODE PCB) --- */}
             {activeTab === 'ecad' && (
-               <div className="relative w-[850px] h-[550px] bg-[#0f172a] rounded-2xl shadow-2xl border-8 border-slate-800 overflow-hidden ring-1 ring-white/10">
+               <div className="relative w-[850px] h-[550px] bg-[#0f172a] rounded-2xl shadow-2xl border-8 border-slate-800 overflow-hidden ring-1 ring-white/10 shrink-0">
                   {/* Board Texture */}
                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.03)_1px,transparent_1px)] [background-size:12px_12px] opacity-50"></div>
                   
@@ -444,7 +451,7 @@ export default function HelixTwinL3() {
 
             {/* --- VIEW 3: MCAD (BLUEPRINT ENCLOSURE) --- */}
             {activeTab === 'mcad' && (
-               <div className="relative w-[850px] h-[550px] bg-[#001f3f] rounded-2xl shadow-2xl border-4 border-[#003366] overflow-hidden font-mono text-cyan-200 flex">
+               <div className="relative w-[850px] h-[550px] bg-[#001f3f] rounded-2xl shadow-2xl border-4 border-[#003366] overflow-hidden font-mono text-cyan-200 flex shrink-0">
                   {/* Blueprint Grid */}
                   <div className="absolute inset-0 bg-[linear-gradient(rgba(56,189,248,0.15)_1px,transparent_1px),linear-gradient(90deg,rgba(56,189,248,0.15)_1px,transparent_1px)] [background-size:20px_20px]"></div>
                   <div className="absolute inset-0 bg-[linear-gradient(rgba(56,189,248,0.3)_1px,transparent_1px),linear-gradient(90deg,rgba(56,189,248,0.3)_1px,transparent_1px)] [background-size:100px_100px]"></div>
@@ -503,7 +510,7 @@ export default function HelixTwinL3() {
 
             {/* --- VIEW 4: FIRMWARE (VS CODE STYLE) --- */}
             {activeTab === 'firmware' && (
-               <div className="w-[850px] h-[550px] bg-[#1e1e1e] rounded-2xl shadow-2xl border border-slate-700 flex flex-col overflow-hidden font-mono">
+               <div className="w-[850px] h-[550px] bg-[#1e1e1e] rounded-2xl shadow-2xl border border-slate-700 flex flex-col overflow-hidden font-mono shrink-0">
                   {/* Fake Window Bar */}
                   <div className="bg-[#2d2d2d] h-10 flex items-center justify-between px-4 border-b border-black">
                      <div className="flex gap-2">
@@ -566,26 +573,8 @@ export default function HelixTwinL3() {
 
          </div>
 
-         {/* BOTTOM CONSOLE PANEL */}
-         <div className="h-40 bg-white border-t border-slate-200 flex flex-col z-20 shadow-[0_-10px_30px_rgba(0,0,0,0.02)]">
-            <div className="px-6 py-2 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
-               <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                  <Terminal className="w-4 h-4 text-sky-500" /> Multi-Agent Console
-               </span>
-               <span className="text-[10px] font-bold text-slate-400 border border-slate-200 px-2 py-0.5 rounded-md bg-white">v2.4.0-stable</span>
-            </div>
-            <div className="flex-1 p-4 overflow-y-auto font-mono text-[11px] space-y-1.5 bg-white">
-               {logs.map((log, i) => (
-                  <div key={i} className={`flex items-start gap-3 border-b border-slate-50 pb-1.5 last:border-0 ${log.type === 'success' ? 'text-emerald-600' : log.type === 'system' ? 'text-sky-600' : log.type === 'warning' ? 'text-orange-500' : 'text-slate-600'}`}>
-                    <span className="opacity-40 shrink-0">[{log.time}]</span>
-                    <span className="font-medium">{log.msg}</span>
-                  </div>
-               ))}
-               <div className="text-sky-500 font-bold animate-pulse mt-1">_</div>
-            </div>
-         </div>
-
       </div>
     </div>
   );
+}
 }
