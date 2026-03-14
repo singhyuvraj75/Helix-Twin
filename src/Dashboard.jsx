@@ -28,7 +28,7 @@ const LayerCard = ({ title, desc, icon: Icon, color, onClick }) => (
 
 export default function Dashboard({ onNavigate }) {
   return (
-    <div className="min-h-screen bg-[#0f172a] text-slate-200 p-8 overflow-y-auto bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-900 via-[#0f172a] to-[#0f172a]">
+    <div className="h-screen w-full bg-[#0f172a] text-slate-200 p-8 overflow-y-auto bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-900 via-[#0f172a] to-[#0f172a]">
       
       {/* Hero Section */}
       <div className="max-w-6xl mx-auto mb-16 text-center pt-10">
