@@ -577,4 +577,3 @@ export default function HelixTwinL3() {
     </div>
   );
 }
-}
