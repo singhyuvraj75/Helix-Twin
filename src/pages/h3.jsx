@@ -375,53 +375,58 @@ export default function HelixTwinL3() {
 
             {/* --- VIEW 2: MCAD (BLUEPRINT ENCLOSURE) --- */}
             {activeTab === 'mcad' && (
-               <div className="relative w-[850px] h-[550px] bg-[#001f3f] rounded-2xl shadow-2xl border-4 border-[#003366] overflow-hidden font-mono text-cyan-200">
+               <div className="relative w-[850px] h-[550px] bg-[#001f3f] rounded-2xl shadow-2xl border-4 border-[#003366] overflow-hidden font-mono text-cyan-200 flex">
                   {/* Blueprint Grid */}
                   <div className="absolute inset-0 bg-[linear-gradient(rgba(56,189,248,0.15)_1px,transparent_1px),linear-gradient(90deg,rgba(56,189,248,0.15)_1px,transparent_1px)] [background-size:20px_20px]"></div>
                   <div className="absolute inset-0 bg-[linear-gradient(rgba(56,189,248,0.3)_1px,transparent_1px),linear-gradient(90deg,rgba(56,189,248,0.3)_1px,transparent_1px)] [background-size:100px_100px]"></div>
                   
-                  {/* Title Block */}
-                  <div className="absolute bottom-6 right-6 border-2 border-cyan-500/50 p-4 bg-[#001f3f]/80 backdrop-blur">
-                     <div className="text-xl font-bold border-b border-cyan-500/50 pb-2 mb-2">VENTILATOR_ENCLOSURE</div>
-                     <div className="text-xs space-y-1">
-                        <div>MATL: ABS_MEDICAL_GRADE</div>
-                        <div>TOL: ±0.15mm</div>
-                        <div>SCALE: 1:1</div>
-                        <div>IP_RATING: IP54</div>
+                  {/* Isometric Box Drawing */}
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none pr-[280px]">
+                     <div className="relative w-[500px] h-[400px]">
+                         <svg width="500" height="400" viewBox="0 0 500 400" className="opacity-80">
+                            {/* Box outline */}
+                            <path d="M 250 50 L 450 150 L 450 350 L 250 250 Z" fill="rgba(56,189,248,0.05)" stroke="#38bdf8" strokeWidth="2" />
+                            <path d="M 50 150 L 250 50 L 250 250 L 50 350 Z" fill="rgba(56,189,248,0.1)" stroke="#38bdf8" strokeWidth="2" />
+                            <path d="M 250 250 L 450 350 L 250 450 L 50 350 Z" fill="none" stroke="#38bdf8" strokeWidth="2" strokeDasharray="5 5" />
+                            <path d="M 50 150 L 250 250 L 450 150" fill="none" stroke="#38bdf8" strokeWidth="2" />
+                            
+                            {/* Ventilation Cutouts */}
+                            <path d="M 300 130 L 400 180 L 400 190 L 300 140 Z" fill="none" stroke="#38bdf8" strokeWidth="1" />
+                            <path d="M 300 150 L 400 200 L 400 210 L 300 160 Z" fill="none" stroke="#38bdf8" strokeWidth="1" />
+                            <path d="M 300 170 L 400 220 L 400 230 L 300 180 Z" fill="none" stroke="#38bdf8" strokeWidth="1" />
+
+                            {/* Dimension Lines */}
+                            <line x1="460" y1="150" x2="460" y2="350" stroke="#38bdf8" strokeWidth="1" />
+                            <line x1="455" y1="150" x2="465" y2="150" stroke="#38bdf8" strokeWidth="1" />
+                            <line x1="455" y1="350" x2="465" y2="350" stroke="#38bdf8" strokeWidth="1" />
+                            <text x="470" y="250" fill="#38bdf8" fontSize="12" className="font-mono">90mm</text>
+
+                            <line x1="250" y1="40" x2="450" y2="140" stroke="#38bdf8" strokeWidth="1" />
+                            <text x="350" y="80" fill="#38bdf8" fontSize="12" className="font-mono">120mm</text>
+                         </svg>
+                         
+                         {/* Tooltip/Highlight accurately placed on drawing edge */}
+                         <div className="absolute top-[200px] left-[150px] flex items-center gap-3">
+                            <div className="relative flex items-center justify-center pointer-events-auto">
+                               <div className="w-4 h-4 rounded-full bg-cyan-400 animate-ping absolute"></div>
+                               <div className="w-4 h-4 rounded-full bg-cyan-500 border-2 border-white relative z-10"></div>
+                            </div>
+                            <div className="bg-[#001f3f]/90 backdrop-blur border border-cyan-500 p-2.5 rounded-lg text-xs z-10 shadow-[0_0_15px_rgba(6,182,212,0.3)] pointer-events-auto">
+                               <div className="text-cyan-300 mb-0.5">Wall Thickness:</div>
+                               <span className="font-bold text-white tracking-wide">2.5mm (Yield Check: PASS)</span>
+                            </div>
+                         </div>
                      </div>
                   </div>
-
-                  {/* Isometric Box Drawing */}
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                     <svg width="500" height="400" viewBox="0 0 500 400" className="opacity-80">
-                        {/* Box outline */}
-                        <path d="M 250 50 L 450 150 L 450 350 L 250 250 Z" fill="rgba(56,189,248,0.05)" stroke="#38bdf8" strokeWidth="2" />
-                        <path d="M 50 150 L 250 50 L 250 250 L 50 350 Z" fill="rgba(56,189,248,0.1)" stroke="#38bdf8" strokeWidth="2" />
-                        <path d="M 250 250 L 450 350 L 250 450 L 50 350 Z" fill="none" stroke="#38bdf8" strokeWidth="2" strokeDasharray="5 5" />
-                        <path d="M 50 150 L 250 250 L 450 150" fill="none" stroke="#38bdf8" strokeWidth="2" />
-                        
-                        {/* Ventilation Cutouts */}
-                        <path d="M 300 130 L 400 180 L 400 190 L 300 140 Z" fill="none" stroke="#38bdf8" strokeWidth="1" />
-                        <path d="M 300 150 L 400 200 L 400 210 L 300 160 Z" fill="none" stroke="#38bdf8" strokeWidth="1" />
-                        <path d="M 300 170 L 400 220 L 400 230 L 300 180 Z" fill="none" stroke="#38bdf8" strokeWidth="1" />
-
-                        {/* Dimension Lines */}
-                        <line x1="460" y1="150" x2="460" y2="350" stroke="#38bdf8" strokeWidth="1" />
-                        <line x1="455" y1="150" x2="465" y2="150" stroke="#38bdf8" strokeWidth="1" />
-                        <line x1="455" y1="350" x2="465" y2="350" stroke="#38bdf8" strokeWidth="1" />
-                        <text x="470" y="250" fill="#38bdf8" fontSize="12" className="font-mono">90mm</text>
-
-                        <line x1="250" y1="40" x2="450" y2="140" stroke="#38bdf8" strokeWidth="1" />
-                        <text x="350" y="80" fill="#38bdf8" fontSize="12" className="font-mono">120mm</text>
-                     </svg>
-                  </div>
                   
-                  {/* Tooltip/Highlight */}
-                  <div className="absolute top-1/3 left-1/4 flex items-start gap-2">
-                     <div className="w-4 h-4 rounded-full bg-cyan-400 animate-ping absolute"></div>
-                     <div className="w-4 h-4 rounded-full bg-cyan-500 border-2 border-white relative z-10"></div>
-                     <div className="bg-[#001f3f] border border-cyan-500 p-2 rounded text-xs z-10">
-                        Wall Thickness:<br/><span className="font-bold text-white">2.5mm (Yield Check: PASS)</span>
+                  {/* Title Block */}
+                  <div className="absolute bottom-6 right-6 border-2 border-cyan-500/30 p-5 bg-[#001730]/90 backdrop-blur-md z-10 min-w-[240px] rounded-xl shadow-2xl">
+                     <div className="text-lg font-bold border-b border-cyan-500/30 pb-3 mb-3 tracking-wider text-white">VENTILATOR_ENCLOSURE</div>
+                     <div className="text-xs space-y-2 font-mono">
+                        <div className="flex justify-between"><span className="text-cyan-500/70">MATL:</span> <span className="text-cyan-100">ABS_MEDICAL_GRADE</span></div>
+                        <div className="flex justify-between"><span className="text-cyan-500/70">TOL:</span> <span className="text-cyan-100">±0.15mm</span></div>
+                        <div className="flex justify-between"><span className="text-cyan-500/70">SCALE:</span> <span className="text-cyan-100">1:1</span></div>
+                        <div className="flex justify-between"><span className="text-cyan-500/70">IP_RATING:</span> <span className="text-cyan-100">IP54</span></div>
                      </div>
                   </div>
                </div>
