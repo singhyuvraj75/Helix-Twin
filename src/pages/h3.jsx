@@ -120,10 +120,10 @@ const OptimizationChartLarge = () => {
 
   const optimal = { x: 4.8, y: 11.5 }; 
 
-  // Chart Dimensions (Pixel Perfect Scaling to match the 850x550 container)
-  const width = 850;
-  const height = 550;
-  const margin = { top: 40, right: 50, bottom: 80, left: 80 }; // Increased bottom margin
+  // Fixed Dimensions: Increased bottom margin to ensure X-axis text renders completely
+  const width = 800;
+  const height = 440;
+  const margin = { top: 40, right: 50, bottom: 80, left: 80 }; 
   const plotWidth = width - margin.left - margin.right;
   const plotHeight = height - margin.top - margin.bottom;
 
@@ -181,7 +181,7 @@ const OptimizationChartLarge = () => {
           <line x1={xScale(0)} y1={yScale(0)} x2={xScale(10)} y2={yScale(0)} stroke="#475569" strokeWidth="3" strokeLinecap="round" />
           <line x1={xScale(0)} y1={yScale(0)} x2={xScale(0)} y2={yScale(15)} stroke="#475569" strokeWidth="3" strokeLinecap="round" />
 
-          {/* Axis Titles (Correctly placed and scaled to avoid clipping) */}
+          {/* Axis Titles (Correctly placed to avoid clipping) */}
           <text x={xScale(5)} y={yScale(0) + 60} fill="#1e293b" fontSize="16" textAnchor="middle" fontWeight="900" letterSpacing="2">SYSTEM MASS (kg)</text>
           <text x={xScale(0) - 55} y={yScale(7.5)} fill="#1e293b" fontSize="16" textAnchor="middle" fontWeight="900" letterSpacing="2" transform={`rotate(-90, ${xScale(0) - 55}, ${yScale(7.5)})`}>BATTERY LIFE (h)</text>
 
@@ -388,14 +388,14 @@ export default function HelixTwinL3() {
             
             {/* --- VIEW 1: OPTIMIZATION CHART --- */}
             {activeTab === 'optimization' && (
-               <div className="w-[850px] h-[550px] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col shrink-0">
+               <div className="w-[800px] h-[520px] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col shrink-0">
                   <OptimizationChartLarge />
                </div>
             )}
 
             {/* --- VIEW 2: ECAD (DARK MODE PCB) --- */}
             {activeTab === 'ecad' && (
-               <div className="relative w-[850px] h-[550px] bg-[#0f172a] rounded-2xl shadow-2xl border-8 border-slate-800 overflow-hidden ring-1 ring-white/10 shrink-0">
+               <div className="relative w-[800px] h-[520px] bg-[#0f172a] rounded-2xl shadow-2xl border-8 border-slate-800 overflow-hidden ring-1 ring-white/10 shrink-0">
                   {/* Board Texture */}
                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.03)_1px,transparent_1px)] [background-size:12px_12px] opacity-50"></div>
                   
@@ -451,7 +451,7 @@ export default function HelixTwinL3() {
 
             {/* --- VIEW 3: MCAD (BLUEPRINT ENCLOSURE) --- */}
             {activeTab === 'mcad' && (
-               <div className="relative w-[850px] h-[550px] bg-[#001f3f] rounded-2xl shadow-2xl border-4 border-[#003366] overflow-hidden font-mono text-cyan-200 flex shrink-0">
+               <div className="relative w-[800px] h-[520px] bg-[#001f3f] rounded-2xl shadow-2xl border-4 border-[#003366] overflow-hidden font-mono text-cyan-200 flex shrink-0">
                   {/* Blueprint Grid */}
                   <div className="absolute inset-0 bg-[linear-gradient(rgba(56,189,248,0.15)_1px,transparent_1px),linear-gradient(90deg,rgba(56,189,248,0.15)_1px,transparent_1px)] [background-size:20px_20px]"></div>
                   <div className="absolute inset-0 bg-[linear-gradient(rgba(56,189,248,0.3)_1px,transparent_1px),linear-gradient(90deg,rgba(56,189,248,0.3)_1px,transparent_1px)] [background-size:100px_100px]"></div>
@@ -510,7 +510,7 @@ export default function HelixTwinL3() {
 
             {/* --- VIEW 4: FIRMWARE (VS CODE STYLE) --- */}
             {activeTab === 'firmware' && (
-               <div className="w-[850px] h-[550px] bg-[#1e1e1e] rounded-2xl shadow-2xl border border-slate-700 flex flex-col overflow-hidden font-mono shrink-0">
+               <div className="w-[800px] h-[520px] bg-[#1e1e1e] rounded-2xl shadow-2xl border border-slate-700 flex flex-col overflow-hidden font-mono shrink-0">
                   {/* Fake Window Bar */}
                   <div className="bg-[#2d2d2d] h-10 flex items-center justify-between px-4 border-b border-black">
                      <div className="flex gap-2">
