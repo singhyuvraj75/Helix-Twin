@@ -66,7 +66,6 @@ const calculateRPN = (sev, prob) => {
 const RiskMatrixChart = ({ data }) => {
   const width = 800;
   const height = 300;
-  // Increased right margin slightly for better breathing room
   const margin = { top: 40, right: 60, bottom: 50, left: 60 };
   const plotW = width - margin.left - margin.right;
   const plotH = height - margin.top - margin.bottom;
@@ -495,5 +494,4 @@ export default function HelixTwinL6() {
       </div>
     </div>
   );
-}
 }
