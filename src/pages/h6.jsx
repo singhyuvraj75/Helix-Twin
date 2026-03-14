@@ -18,7 +18,7 @@ import {
   ShieldAlert,
   MapPin,
   Clock,
-  Cpu, // Added missing Cpu import
+  Cpu,
   Layers
 } from 'lucide-react';
 
@@ -66,7 +66,8 @@ const calculateRPN = (sev, prob) => {
 const RiskMatrixChart = ({ data }) => {
   const width = 800;
   const height = 300;
-  const margin = { top: 40, right: 40, bottom: 50, left: 60 };
+  // Increased right margin slightly for better breathing room
+  const margin = { top: 40, right: 60, bottom: 50, left: 60 };
   const plotW = width - margin.left - margin.right;
   const plotH = height - margin.top - margin.bottom;
 
@@ -128,15 +129,19 @@ const RiskMatrixChart = ({ data }) => {
                
                const color = isDanger ? '#ef4444' : isCritical ? '#f59e0b' : '#10b981';
                
+               // Smart tooltip positioning: flip to the left if too close to the right edge
+               const flipTooltip = cx > width - 150;
+               const tooltipXOffset = flipTooltip ? -122 : 12;
+               
                return (
                  <g key={i} className="transition-all hover:opacity-80 cursor-pointer group">
                     {isDanger && <circle cx={cx} cy={cy} r="14" fill={color} opacity="0.2" className="animate-ping" />}
                     <circle cx={cx} cy={cy} r="8" fill={color} stroke="white" strokeWidth="2" className="shadow-lg" />
                     
                     {/* Tooltip Tag */}
-                    <g transform={`translate(${cx + 12}, ${cy - 12})`} className="opacity-100 transition-opacity">
-                       <rect x="0" y="-14" width="100" height="20" fill="white" rx="4" stroke="#e2e8f0" />
-                       <text x="50" y="-1" fontSize="9" fontWeight="bold" fill="#334155" textAnchor="middle">{item.mpn}</text>
+                    <g transform={`translate(${cx + tooltipXOffset}, ${cy - 12})`} className="opacity-100 transition-opacity">
+                       <rect x="0" y="-14" width="110" height="20" fill="white" rx="4" stroke="#e2e8f0" />
+                       <text x="55" y="-1" fontSize="9" fontWeight="bold" fill="#334155" textAnchor="middle">{item.mpn}</text>
                     </g>
                  </g>
                );
@@ -490,4 +495,5 @@ export default function HelixTwinL6() {
       </div>
     </div>
   );
+}
 }
