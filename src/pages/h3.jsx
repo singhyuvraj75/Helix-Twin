@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Cpu,
   Grid,
@@ -19,7 +19,8 @@ import {
   Save,
   Maximize,
   FileText,
-  Layers // Added missing import
+  Layers,
+  Target
 } from 'lucide-react';
 
 // --- MOCK DATA ---
@@ -104,54 +105,113 @@ const PcbComponent = ({ comp, showThermal, isSelected }) => {
   );
 };
 
-// --- CHART COMPONENT ---
-const OptimizationChart = () => {
-  const points = Array.from({ length: 60 }).map(() => ({
-    x: Math.random() * 8 + 2, 
-    y: Math.random() * 10 + 2,
-  })).map(p => ({ ...p, status: (p.x < 5 && p.y > 4) ? 'feasible' : 'infeasible' }));
-  const optimal = { x: 4.8, y: 11.5 };
+// --- CHART COMPONENT (MOVED TO MAIN CANVAS) ---
+const OptimizationChartLarge = () => {
+  const points = useMemo(() => {
+    return Array.from({ length: 250 }).map(() => {
+      const mass = Math.random() * 6 + 2; // 2 to 8 kg
+      const life = (mass * 1.2) + (Math.random() * 6 - 3); // Spread around a linear correlation
+      const feasible = mass <= 5.0 && life >= 4.0;
+      return { x: mass, y: Math.max(0, Math.min(15, life)), feasible };
+    });
+  }, []);
+
+  const optimal = { x: 4.8, y: 11.5 }; 
+
+  // Inner SVG dimensions for perfect responsive scaling
+  const width = 850;
+  const height = 480;
+  const margin = { top: 40, right: 50, bottom: 60, left: 60 };
+  const plotWidth = width - margin.left - margin.right;
+  const plotHeight = height - margin.top - margin.bottom;
+
+  const xScale = (val) => margin.left + (val / 10) * plotWidth;
+  const yScale = (val) => margin.top + plotHeight - (val / 15) * plotHeight;
 
   return (
-    <div className="w-full h-56 relative border border-slate-200 rounded-xl bg-white p-4 shadow-sm flex flex-col">
-      <div className="flex justify-between items-center mb-3">
-        <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Multi-Objective Optimization</h4>
-        <span className="text-[9px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold border border-emerald-200">Converged</span>
+    <div className="w-full h-full flex flex-col bg-white">
+      {/* Header */}
+      <div className="px-8 py-5 border-b border-slate-100 flex justify-between items-center z-10 shadow-sm shrink-0">
+        <div>
+          <h2 className="text-xl font-black text-slate-800 tracking-tight">Multi-Objective Optimization</h2>
+          <p className="text-xs text-slate-500 mt-0.5 font-medium">Architect Agent: System Mass vs. Battery Autonomy</p>
+        </div>
+        <div className="flex gap-4">
+           <div className="flex items-center gap-2 text-xs font-bold text-slate-500"><span className="w-3 h-3 rounded-full bg-slate-200"></span> Infeasible</div>
+           <div className="flex items-center gap-2 text-xs font-bold text-sky-600"><span className="w-3 h-3 rounded-full bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.5)]"></span> Feasible Space</div>
+           <div className="flex items-center gap-2 text-xs font-bold text-emerald-600"><span className="w-4 h-4 rounded-full bg-emerald-500 border-2 border-white shadow-md"></span> Selected Optimal</div>
+        </div>
       </div>
-      <div className="flex-1 relative">
-        <svg className="w-full h-full overflow-visible" viewBox="0 0 100 60" preserveAspectRatio="none">
-          {/* Feasible Zone Shading */}
-          <rect x="10" y="5" width="50" height="35" fill="#f0f9ff" />
+
+      {/* SVG Canvas - Fully expanded and correctly plotted */}
+      <div className="flex-1 w-full h-full relative bg-slate-50 flex items-center justify-center p-4">
+        <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet" className="overflow-visible">
           
-          {/* Grid & Axes */}
-          <line x1="10" y1="50" x2="95" y2="50" stroke="#cbd5e1" strokeWidth="1" />
-          <line x1="10" y1="50" x2="10" y2="5" stroke="#cbd5e1" strokeWidth="1" />
+          {/* Feasible Zone Background */}
+          <rect 
+             x={xScale(0)} 
+             y={yScale(15)} 
+             width={xScale(5) - xScale(0)} 
+             height={yScale(4) - yScale(15)} 
+             fill="#f0f9ff" 
+             rx="4" 
+          />
           
-          {/* Constraints */}
-          <line x1="60" y1="5" x2="60" y2="50" stroke="#ef4444" strokeWidth="1.5" strokeDasharray="3 2" />
-          <text x="62" y="10" fontSize="4.5" fontWeight="bold" fill="#ef4444">Max Mass (5kg)</text>
+          {/* Grid Lines & Axis Values */}
+          {[0, 2, 4, 6, 8, 10].map(val => (
+            <g key={`x-${val}`}>
+               <line x1={xScale(val)} y1={yScale(0)} x2={xScale(val)} y2={yScale(15)} stroke="#e2e8f0" strokeWidth="2" />
+               <text x={xScale(val)} y={yScale(0) + 24} fill="#64748b" fontSize="12" textAnchor="middle" fontWeight="bold">{val}kg</text>
+            </g>
+          ))}
+          {[0, 3, 6, 9, 12, 15].map(val => (
+            <g key={`y-${val}`}>
+               <line x1={xScale(0)} y1={yScale(val)} x2={xScale(10)} y2={yScale(val)} stroke="#e2e8f0" strokeWidth="2" />
+               <text x={xScale(0) - 15} y={yScale(val) + 4} fill="#64748b" fontSize="12" textAnchor="end" fontWeight="bold">{val}h</text>
+            </g>
+          ))}
+
+          {/* Axes Base Lines */}
+          <line x1={xScale(0)} y1={yScale(0)} x2={xScale(10)} y2={yScale(0)} stroke="#94a3b8" strokeWidth="2" />
+          <line x1={xScale(0)} y1={yScale(0)} x2={xScale(0)} y2={yScale(15)} stroke="#94a3b8" strokeWidth="2" />
+
+          {/* Axis Titles */}
+          <text x={xScale(5)} y={yScale(0) + 48} fill="#334155" fontSize="14" textAnchor="middle" fontWeight="900" letterSpacing="1">SYSTEM MASS (kg)</text>
+          <text x={xScale(0) - 45} y={yScale(7.5)} fill="#334155" fontSize="14" textAnchor="middle" fontWeight="900" letterSpacing="1" transform={`rotate(-90, ${xScale(0) - 45}, ${yScale(7.5)})`}>BATTERY LIFE (h)</text>
+
+          {/* Constraint Lines & Labels */}
+          <line x1={xScale(5)} y1={yScale(0)} x2={xScale(5)} y2={yScale(15)} stroke="#ef4444" strokeWidth="2" strokeDasharray="6 4" />
+          <rect x={xScale(5) + 8} y={yScale(14) - 14} width="115" height="22" fill="#fef2f2" rx="4" />
+          <text x={xScale(5) + 14} y={yScale(14) + 1} fill="#ef4444" fontSize="12" fontWeight="bold">Max Mass (5kg)</text>
           
-          <line x1="10" y1="40" x2="95" y2="40" stroke="#f59e0b" strokeWidth="1.5" strokeDasharray="3 2" />
-          <text x="75" y="38" fontSize="4.5" fontWeight="bold" fill="#f59e0b">Min Life (4h)</text>
-          
+          <line x1={xScale(0)} y1={yScale(4)} x2={xScale(10)} y2={yScale(4)} stroke="#f59e0b" strokeWidth="2" strokeDasharray="6 4" />
+          <rect x={xScale(9) - 86} y={yScale(4) - 24} width="96" height="22" fill="#fffbeb" rx="4" />
+          <text x={xScale(9) - 80} y={yScale(4) - 9} fill="#f59e0b" fontSize="12" fontWeight="bold">Min Life (4h)</text>
+
           {/* Scatter Points */}
           {points.map((p, i) => (
-            <circle key={i} cx={p.x * 8 + 10} cy={50 - p.y * 3} r="1.5" 
-              fill={p.status === 'feasible' ? '#0ea5e9' : '#cbd5e1'} opacity={p.status === 'feasible' ? 0.8 : 0.5} 
+            <circle 
+              key={i} 
+              cx={xScale(p.x)} cy={yScale(p.y)} 
+              r={p.feasible ? "5" : "4"} 
+              fill={p.feasible ? '#38bdf8' : '#cbd5e1'} 
+              opacity={p.feasible ? 0.9 : 0.6} 
+              className="transition-all hover:r-8 hover:opacity-100 cursor-pointer"
             />
           ))}
+
+          {/* Optimal Point Visualization */}
+          <circle cx={xScale(optimal.x)} cy={yScale(optimal.y)} r="16" fill="#10b981" opacity="0.2" className="animate-ping" />
+          <circle cx={xScale(optimal.x)} cy={yScale(optimal.y)} r="8" fill="#10b981" stroke="white" strokeWidth="2" className="shadow-2xl drop-shadow-md" />
           
-          {/* Optimal Point */}
-          <circle cx={optimal.x * 8 + 10} cy={50 - optimal.y * 3} r="4" fill="#0ea5e9" opacity="0.3" className="animate-ping" />
-          <circle cx={optimal.x * 8 + 10} cy={50 - optimal.y * 3} r="2.5" fill="#0284c7" stroke="white" strokeWidth="1" />
-          <path d={`M ${optimal.x * 8 + 10} ${50 - optimal.y * 3} L ${optimal.x * 8 + 20} ${50 - optimal.y * 3 - 10}`} stroke="#0284c7" strokeWidth="0.5" />
-          <text x={optimal.x * 8 + 22} y={50 - optimal.y * 3 - 9} fontSize="4.5" fontWeight="bold" fill="#0369a1">Selected Design</text>
+          {/* Tooltip Tag */}
+          <path d={`M ${xScale(optimal.x)} ${yScale(optimal.y)} L ${xScale(optimal.x) + 30} ${yScale(optimal.y) - 30}`} stroke="#047857" strokeWidth="2" />
+          <g transform={`translate(${xScale(optimal.x) + 30}, ${yScale(optimal.y) - 45})`}>
+            <rect x="0" y="0" width="130" height="32" fill="#047857" rx="6" className="drop-shadow-lg" />
+            <text x="65" y="20" fill="white" fontSize="12" fontWeight="bold" textAnchor="middle">Selected Design</text>
+          </g>
+
         </svg>
-      </div>
-      <div className="flex justify-between mt-2 px-2">
-        <span className="text-[9px] font-bold text-slate-400">0kg</span>
-        <span className="text-[9px] font-bold text-slate-400">System Mass</span>
-        <span className="text-[9px] font-bold text-slate-400">10kg</span>
       </div>
     </div>
   );
@@ -160,7 +220,7 @@ const OptimizationChart = () => {
 // --- MAIN COMPONENT ---
 
 export default function HelixTwinL3() {
-  const [activeTab, setActiveTab] = useState('ecad');
+  const [activeTab, setActiveTab] = useState('optimization');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [components, setComponents] = useState(INITIAL_COMPONENTS);
   const [isOptimizing, setIsOptimizing] = useState(false);
@@ -179,6 +239,7 @@ export default function HelixTwinL3() {
 
   const runAutoPlace = () => {
     setIsOptimizing(true);
+    setActiveTab('ecad'); // Switch to ECAD to see it happen
     addLog("Executing Force-Directed Placement Algorithm...", "system");
     setTimeout(() => {
       setComponents(prev => prev.map(c => c.anchored ? c : {
@@ -192,6 +253,7 @@ export default function HelixTwinL3() {
   };
 
   const toggleRoute = () => {
+    setActiveTab('ecad'); // Switch to ECAD to see it happen
     if (isRouted) {
       setIsRouted(false);
       addLog("Traces ripped up.", "warning");
@@ -202,9 +264,8 @@ export default function HelixTwinL3() {
     }
   };
 
-  // Fixed the tab rendering logic by using components directly instead of object references
-  // that were causing issues in the React rendering tree
   const tabs = [
+    { id: 'optimization', label: 'Optimization', IconComponent: Target },
     { id: 'ecad', label: 'ECAD Layout', IconComponent: Grid },
     { id: 'mcad', label: 'MCAD Enclosure', IconComponent: Box },
     { id: 'firmware', label: 'Firmware HAL', IconComponent: Code }
@@ -264,7 +325,10 @@ export default function HelixTwinL3() {
                    </h3>
                    <div className="space-y-3">
                       <button 
-                        onClick={() => setShowThermal(!showThermal)}
+                        onClick={() => {
+                           setShowThermal(!showThermal);
+                           setActiveTab('ecad');
+                        }}
                         className={`w-full flex items-center justify-between border p-3 rounded-xl text-xs font-bold transition-all shadow-sm
                           ${showThermal ? 'bg-orange-50 border-orange-200 text-orange-700' : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'}`}
                       >
@@ -278,8 +342,6 @@ export default function HelixTwinL3() {
                    </div>
                 </div>
 
-                {/* Chart */}
-                <OptimizationChart />
              </>
            )}
         </div>
@@ -289,12 +351,12 @@ export default function HelixTwinL3() {
       <div className="flex-1 flex flex-col h-full bg-slate-100 relative">
          
          {/* TOP HEADER */}
-         <div className="h-16 bg-white/90 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-6 shadow-sm z-20 sticky top-0">
+         <div className="h-16 bg-white/90 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-6 shadow-sm z-20 sticky top-0 overflow-x-auto">
             <div className="flex gap-2 bg-slate-100 p-1.5 rounded-xl border border-slate-200">
                {tabs.map(tab => (
                   <button
                     key={tab.id} onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap
                       ${activeTab === tab.id ? 'bg-white text-sky-600 shadow-md border border-slate-200/50' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200/50'}`}
                   >
                     <tab.IconComponent className="w-4 h-4" /> {tab.label}
@@ -308,7 +370,7 @@ export default function HelixTwinL3() {
                   <div className="w-px h-4 bg-slate-300"></div>
                   <span>Mass: <strong className="text-sky-600">4.8kg</strong></span>
                </div>
-               <button className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg transition-all transform hover:-translate-y-0.5">
+               <button className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg transition-all transform hover:-translate-y-0.5 whitespace-nowrap">
                   <Download className="w-4 h-4 text-sky-400" /> Export Package
                </button>
             </div>
@@ -317,7 +379,14 @@ export default function HelixTwinL3() {
          {/* CANVAS WORKSPACE */}
          <div className="flex-1 overflow-hidden relative flex flex-col items-center justify-center p-8 bg-[radial-gradient(#cbd5e1_1.5px,transparent_1.5px)] [background-size:24px_24px]">
             
-            {/* --- VIEW 1: ECAD (DARK MODE PCB) --- */}
+            {/* --- VIEW 1: OPTIMIZATION CHART --- */}
+            {activeTab === 'optimization' && (
+               <div className="relative w-[850px] h-[550px] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col">
+                  <OptimizationChartLarge />
+               </div>
+            )}
+
+            {/* --- VIEW 2: ECAD (DARK MODE PCB) --- */}
             {activeTab === 'ecad' && (
                <div className="relative w-[850px] h-[550px] bg-[#0f172a] rounded-2xl shadow-2xl border-8 border-slate-800 overflow-hidden ring-1 ring-white/10">
                   {/* Board Texture */}
@@ -373,7 +442,7 @@ export default function HelixTwinL3() {
                </div>
             )}
 
-            {/* --- VIEW 2: MCAD (BLUEPRINT ENCLOSURE) --- */}
+            {/* --- VIEW 3: MCAD (BLUEPRINT ENCLOSURE) --- */}
             {activeTab === 'mcad' && (
                <div className="relative w-[850px] h-[550px] bg-[#001f3f] rounded-2xl shadow-2xl border-4 border-[#003366] overflow-hidden font-mono text-cyan-200 flex">
                   {/* Blueprint Grid */}
@@ -432,7 +501,7 @@ export default function HelixTwinL3() {
                </div>
             )}
 
-            {/* --- VIEW 3: FIRMWARE (VS CODE STYLE) --- */}
+            {/* --- VIEW 4: FIRMWARE (VS CODE STYLE) --- */}
             {activeTab === 'firmware' && (
                <div className="w-[850px] h-[550px] bg-[#1e1e1e] rounded-2xl shadow-2xl border border-slate-700 flex flex-col overflow-hidden font-mono">
                   {/* Fake Window Bar */}
