@@ -81,19 +81,7 @@ const MainChart = ({ modelData, realData, particles, currentStep, showReal }) =>
           />
         )}
 
-        {/* 2. Particles (Orange Cloud - Bayesian Beliefs) */}
-        {particles.map((p, i) => (
-          <circle
-            key={`p-${i}`}
-            cx={xScale(p.t)}
-            cy={yScale(p.v)}
-            r={1.5}
-            fill="#f97316"
-            opacity="0.3"
-          />
-        ))}
-
-        {/* 3. Dynamic Model Curve (Blue dashed) */}
+        {/* 2. Dynamic Model Curve (Blue dashed) */}
         <path
           d={`M ${modelData.map(d => `${xScale(d.t)},${yScale(d.v)}`).join(' L ')}`}
           fill="none"
@@ -102,12 +90,24 @@ const MainChart = ({ modelData, realData, particles, currentStep, showReal }) =>
           strokeDasharray="6 4"
         />
 
+        {/* 3. Particles (Orange Comet Tail - Clean & Sparse) */}
+        {particles.map((p, i) => (
+          <circle
+            key={`p-${i}`}
+            cx={xScale(p.t)}
+            cy={yScale(p.v)}
+            r={2.5 - (p.age * 0.2)} // Radius shrinks as particle ages
+            fill="#f97316"
+            opacity={0.8 - (p.age * 0.1)} // Opacity fades smoothly
+          />
+        ))}
+
         {/* Current Time Indicator */}
         {currentStep > 0 && currentStep < 100 && (
           <g transform={`translate(${xScale(currentStep)}, 0)`}>
             <line x1="0" y1={padding.top} x2="0" y2={height - padding.bottom} stroke="#f97316" strokeWidth="1" strokeDasharray="2 2" />
-            <rect x="-20" y={padding.top - 10} width="40" height="14" fill="#f97316" rx="2" />
-            <text x="0" y={padding.top} fill="white" fontSize="9" fontWeight="bold" textAnchor="middle">t={currentStep}</text>
+            <rect x="-18" y={padding.top - 12} width="36" height="14" fill="#f97316" rx="3" />
+            <text x="0" y={padding.top - 2} fill="white" fontSize="9" fontWeight="bold" textAnchor="middle">t={currentStep}</text>
           </g>
         )}
 
@@ -120,7 +120,7 @@ const MainChart = ({ modelData, realData, particles, currentStep, showReal }) =>
           <line x1="10" y1="40" x2="30" y2="40" stroke="#10b981" strokeWidth="2" />
           <text x="38" y="43" fill="#475569" fontSize="10" fontWeight="600">Empirical Log</text>
 
-          <circle cx="20" cy="60" r="2.5" fill="#f97316" opacity="0.6"/>
+          <circle cx="20" cy="60" r="2.5" fill="#f97316" opacity="0.8"/>
           <text x="38" y="63" fill="#475569" fontSize="10" fontWeight="600">SMC Particles</text>
         </g>
       </svg>
@@ -234,8 +234,7 @@ export default function HelixTwinL4() {
       
       // 1. Parameter Evolution (Algorithm converging)
       const progress = t / 100;
-      // Ease-out curve for convergence simulation
-      const convergence = 1 - Math.pow(1 - progress, 3);
+      const convergence = 1 - Math.pow(1 - progress, 3); // Ease-out curve
       currentR = 0.100 + ((targetR - 0.100) * convergence);
       setRParam(currentR);
       
@@ -244,23 +243,27 @@ export default function HelixTwinL4() {
       setModelData(currentModel);
 
       // 2. Metrics Updates
-      if (t === 15) { setSysStatus("Resampling Particles (SIR)..."); addLog("Evaluating particle weights...", "info"); }
+      if (t === 15) { setSysStatus("Resampling Particles (SIR)..."); addLog("Evaluating posterior density...", "info"); }
       if (t === 45) { setSysStatus("Minimizing Residual Error..."); addLog("Gradient descent shifting R_internal...", "info"); }
       if (t === 75) { setSysStatus("Fine-tuning local optima..."); addLog("Approaching convergence bound.", "info"); }
 
-      // 3. Generate Scatter Particles for this step
-      // Variance decreases as model converges
-      const variance = 0.35 * (1 - convergence) + 0.02; 
+      // 3. Generate Clean Particle Swarm (Comet Tail Effect)
+      const variance = 0.25 * (1 - convergence) + 0.01; 
       const baseVal = currentModel[t].v;
       const realVal = realDataRef.current[t].v;
 
-      const newParticles = Array.from({length: 15}).map(() => {
-        // Gaussian spread around the current model belief
-        const pVal = baseVal + (Math.random() - 0.5) * variance;
-        return { t, v: pVal };
+      // Only generate 6 tight particles per frame using pseudo-Gaussian distribution
+      const newParticles = Array.from({length: 6}).map(() => {
+        const randNormal = (Math.random() + Math.random() + Math.random() - 1.5) * 2;
+        const pVal = baseVal + randNormal * variance;
+        return { t, v: pVal, age: 0 };
       });
 
-      setParticles(prev => [...prev, ...newParticles]);
+      setParticles(prev => {
+        // Age existing particles and drop them after 8 ticks to create a fading tail
+        const aged = prev.map(p => ({ ...p, age: p.age + 1 })).filter(p => p.age < 8);
+        return [...aged, ...newParticles];
+      });
 
       // 4. Calculate RMSE for this epoch
       const error = Math.abs(baseVal - realVal) * (1 - convergence) + (Math.random() * 0.03);
@@ -272,10 +275,11 @@ export default function HelixTwinL4() {
       if (t >= 100) {
         clearInterval(interval);
         setStep(4);
+        setParticles([]); // Clear particles upon convergence for a pristine final state
         setSysStatus("Calibration Converged. Parameters Locked.");
         addLog("SMC Filter Complete. Error within tolerance (< 1%).", "success");
       }
-    }, 45); // Speed of animation
+    }, 55); // Slightly slower for smoother observation
   };
 
   return (
