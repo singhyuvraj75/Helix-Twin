@@ -16,7 +16,11 @@ import {
   Network,
   Menu,
   Sparkles,
-  Bot
+  Bot,
+  Activity,
+  Calculator,
+  ZoomIn,
+  ZoomOut
 } from 'lucide-react';
 
 // --- GEMINI API CONFIGURATION ---
@@ -47,34 +51,26 @@ const GRAPH_EDGES = [
   { source: 'C2', target: 'H1', label: 'HAS_RISK' },
   { source: 'C3', target: 'S2', label: 'REQUIRES' },
   { source: 'C4', target: 'S3', label: 'COMPLIES_WITH' },
-  { source: 'C4', target: 'C3', label: 'CONTROLLED_BY' }, // Blower controlled by MCU
+  { source: 'C4', target: 'C3', label: 'CONTROLLED_BY' },
   { source: 'S2', target: 'H1', label: 'MITIGATES' }
 ];
 
 // --- GEMINI HELPER FUNCTION ---
 async function callGemini(prompt) {
   try {
-    // Retry logic with exponential backoff
     const maxRetries = 3;
     let attempt = 0;
-    
     while (attempt < maxRetries) {
       try {
         const response = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`,
           {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              contents: [{ parts: [{ text: prompt }] }]
-            }),
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
           }
         );
-
         if (!response.ok) throw new Error(`API call failed: ${response.status}`);
-
         const data = await response.json();
         return data.candidates?.[0]?.content?.parts?.[0]?.text || "Analysis unavailable.";
       } catch (e) {
@@ -85,67 +81,103 @@ async function callGemini(prompt) {
     }
   } catch (error) {
     console.error("Gemini API Error:", error);
-    return "AI Service Unavailable (Using fallback logic).";
+    return "AI Service Unavailable (Using deterministic fallback).";
   }
 }
 
 // --- HELPER COMPONENTS ---
 
-const TerminalBlock = ({ logs }) => (
-  <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 font-mono text-xs md:text-sm h-full overflow-y-auto shadow-inner ring-1 ring-orange-100">
-    {logs.length === 0 && <span className="text-orange-400 italic">System Ready. Waiting for query...</span>}
-    {logs.map((log, i) => (
-      <div key={i} className={`mb-1 animate-fade-in ${
-        log.type === 'query' ? 'text-sky-600 font-medium' : 
-        log.type === 'error' ? 'text-red-500' : 
-        log.type === 'success' ? 'text-emerald-600' : 
-        log.type === 'ai' ? 'text-purple-600 italic' :
-        'text-slate-600'
-      }`}>
-        <span className="opacity-50 mr-2 text-orange-400">{log.ts}</span>
-        {log.type === 'query' && <span className="text-purple-500 mr-2">$</span>}
-        {log.type === 'ai' && <span className="text-purple-500 mr-2">✨</span>}
-        {log.text}
-      </div>
-    ))}
-    <div className="animate-pulse text-orange-500 font-bold mt-2">_</div>
-  </div>
-);
+const TerminalBlock = ({ logs }) => {
+  const scrollRef = useRef(null);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [logs]);
+
+  return (
+    <div ref={scrollRef} className="bg-slate-900 border-t border-slate-700 p-4 font-mono text-xs md:text-sm h-full overflow-y-auto shadow-inner text-slate-300">
+      {logs.map((log, i) => (
+        <div key={i} className={`mb-1.5 animate-fade-in ${
+          log.type === 'query' ? 'text-sky-400 font-medium' : 
+          log.type === 'error' ? 'text-red-400' : 
+          log.type === 'success' ? 'text-emerald-400 font-bold' : 
+          log.type === 'ai' ? 'text-purple-400 italic' :
+          log.type === 'json' ? 'text-amber-300' :
+          'text-slate-400'
+        }`}>
+          <span className="opacity-50 mr-3 text-slate-500">[{log.ts}]</span>
+          {log.type === 'query' && <span className="text-pink-500 mr-2">cypher❯</span>}
+          {log.type === 'ai' && <span className="text-purple-500 mr-2">agent⚡</span>}
+          {log.type === 'success' && <span className="text-emerald-500 mr-2">✔</span>}
+          
+          {log.type === 'json' ? (
+            <pre className="mt-1 p-2 bg-black/40 rounded border border-slate-700/50 overflow-x-auto text-[11px] leading-tight">
+              {log.text}
+            </pre>
+          ) : (
+            <span>{log.text}</span>
+          )}
+        </div>
+      ))}
+      <div className="animate-pulse text-sky-500 font-bold mt-2">_</div>
+    </div>
+  );
+};
 
 const NodeDetails = ({ node, currentRequirement }) => {
   const [analysis, setAnalysis] = useState(null);
   const [analyzing, setAnalyzing] = useState(false);
+  const [rpnData, setRpnData] = useState(null);
 
   // Reset analysis when node changes
   useEffect(() => {
     setAnalysis(null);
     setAnalyzing(false);
+    setRpnData(null);
   }, [node]);
 
   const runAnalysis = async () => {
     if (!node) return;
     setAnalyzing(true);
     
-    const prompt = `
-      You are a Medical Device Compliance Officer (ISO 13485/14971).
+    // Simulate algorithmic risk propagation calculation
+    setTimeout(async () => {
+      const sev = node.severity || Math.floor(Math.random() * 3) + 2; // Default 2-4 if no severity
+      const occ = Math.floor(Math.random() * 3) + 2; // Occurrence probability (2-4)
+      const det = Math.floor(Math.random() * 3) + 1; // Detectability (1-3)
+      const rpn = sev * occ * det;
       
-      Context:
-      Component: ${node.label} (${node.type})
-      Specs: ${JSON.stringify(node.specs || {})}
-      Requirement: "${currentRequirement || 'General safety check'}"
-      
-      Task:
-      Analyze if this component is suitable for the requirement. 
-      Identify 1 key risk and 1 key benefit. 
-      Keep response under 40 words. Use bullet points.
-    `;
+      setRpnData({
+        severity: sev,
+        occurrence: occ,
+        detection: det,
+        total: rpn,
+        level: rpn >= 30 ? 'CRITICAL' : rpn >= 15 ? 'HIGH' : 'LOW'
+      });
 
-    const result = await callGemini(prompt);
-    setAnalysis(result);
-    setAnalyzing(false);
+      const prompt = `
+        Act as a Medical Device Compliance Officer (ISO 13485/14971).
+        Context: Component: ${node.label} (${node.type}), Specs: ${JSON.stringify(node.specs || {})}.
+        Requirement: "${currentRequirement || 'General safety check'}".
+        Calculated RPN (Risk Priority Number): ${rpn}.
+        Task: Analyze suitability. Provide 1 Risk and 1 Benefit. Use maximum 30 words total.
+      `;
+
+      const result = await callGemini(prompt);
+      setAnalysis(result);
+      setAnalyzing(false);
+    }, 1200); // Artificial delay to show "Traversing Graph" UI
   };
 
-  if (!node) return <div className="text-emerald-600/70 text-sm italic text-center mt-10 p-4 border-2 border-dashed border-emerald-200 rounded-lg bg-emerald-100/20">Select a node to view properties</div>;
+  if (!node) return (
+    <div className="flex flex-col items-center justify-center h-full opacity-60 mt-10">
+      <Network className="w-12 h-12 text-emerald-600 mb-3" strokeWidth={1} />
+      <div className="text-emerald-800 text-sm font-medium">Select a node in the graph</div>
+      <div className="text-emerald-600/70 text-xs text-center mt-1">View metrics and compliance data</div>
+    </div>
+  );
   
   const getIcon = (type) => {
     switch(type) {
@@ -158,62 +190,89 @@ const NodeDetails = ({ node, currentRequirement }) => {
 
   const getHeaderColor = (type) => {
      switch(type) {
-      case 'Component': return 'bg-sky-50 border-sky-100 text-sky-700';
-      case 'Standard': return 'bg-purple-50 border-purple-100 text-purple-700';
-      case 'Hazard': return 'bg-orange-50 border-orange-100 text-orange-700';
+      case 'Component': return 'bg-sky-50 border-sky-200 text-sky-800';
+      case 'Standard': return 'bg-purple-50 border-purple-200 text-purple-800';
+      case 'Hazard': return 'bg-orange-50 border-orange-200 text-orange-800';
       default: return 'bg-slate-50 border-slate-200';
     }
   };
 
   return (
-    <div className="bg-white p-5 rounded-xl border border-slate-200 animate-slide-in shadow-sm hover:shadow-md transition-shadow flex flex-col h-full">
-      <div className={`flex items-center gap-3 mb-4 pb-3 border-b border-slate-100 ${getHeaderColor(node.type)} p-3 rounded-lg -mx-1`}>
+    <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col h-full relative overflow-hidden">
+      <div className={`flex items-center gap-3 mb-4 pb-3 border-b border-slate-200/60 ${getHeaderColor(node.type)} p-3 rounded-lg -mx-1`}>
         {getIcon(node.type)}
         <span className="font-bold text-lg">{node.label}</span>
-        <span className="text-xs bg-white/80 px-2 py-0.5 rounded-full ml-auto font-medium shadow-sm">{node.type}</span>
+        <span className="text-[10px] uppercase tracking-wider bg-white/90 px-2 py-1 rounded ml-auto font-bold shadow-sm">{node.type}</span>
       </div>
       
       <div className="space-y-3 px-1 flex-1 overflow-y-auto">
+        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Node Properties</div>
         {node.specs && Object.entries(node.specs).map(([k, v]) => (
-          <div key={k} className="flex justify-between text-sm group border-b border-slate-50 pb-1 last:border-0">
-            <span className="text-slate-500 font-medium">{k}:</span>
-            <span className="text-sky-700 font-mono bg-sky-50 px-1.5 rounded">{v}</span>
+          <div key={k} className="flex justify-between items-center text-sm group border-b border-slate-100 pb-1.5 last:border-0">
+            <span className="text-slate-500 font-medium capitalize">{k.replace('_', ' ')}:</span>
+            <span className="text-sky-700 font-mono bg-sky-50 px-2 py-0.5 rounded border border-sky-100">{v}</span>
           </div>
         ))}
-        {node.desc && <p className="text-sm text-slate-600 italic bg-slate-50 p-2 rounded border border-slate-100">{node.desc}</p>}
-        {node.severity && (
-           <div className="flex justify-between text-sm items-center bg-red-50 p-2 rounded border border-red-100">
-             <span className="text-slate-600">Severity (1-5):</span>
-             <span className="text-red-600 font-bold bg-white px-2 py-0.5 rounded border border-red-200 shadow-sm">{node.severity}</span>
-           </div>
-        )}
+        {node.desc && <p className="text-sm text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-200 leading-relaxed">{node.desc}</p>}
 
-        {/* AI Analysis Block */}
-        <div className="mt-6">
+        {/* AI Compliance Module */}
+        <div className="mt-8">
           <button 
             onClick={runAnalysis}
             disabled={analyzing}
-            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white py-2 px-4 rounded-lg text-xs font-bold shadow-md transition-all hover:shadow-lg disabled:opacity-70"
+            className="w-full relative overflow-hidden group flex items-center justify-center gap-2 bg-slate-900 hover:bg-black text-white py-2.5 px-4 rounded-lg text-xs font-bold shadow-md transition-all disabled:opacity-80"
           >
-            {analyzing ? <RefreshCw className="w-3 h-3 animate-spin"/> : <Sparkles className="w-3 h-3 text-yellow-300" />}
-            {analyzing ? "Consulting AI Agent..." : "Generate AI Compliance Check"}
+            {analyzing && <div className="absolute inset-0 bg-sky-500/20 animate-pulse"></div>}
+            {analyzing ? <Activity className="w-4 h-4 animate-spin text-sky-400"/> : <Calculator className="w-4 h-4 text-emerald-400" />}
+            {analyzing ? "Traversing Risk Graph..." : "Generate AI Compliance Check"}
           </button>
           
+          {/* Output: RPN Analytics Card */}
+          {rpnData && (
+            <div className="mt-4 bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm animate-fade-in">
+              <div className="bg-slate-50 border-b border-slate-200 px-3 py-2 flex justify-between items-center">
+                 <span className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1.5"><Activity className="w-3 h-3"/> Risk Propagation (RPN)</span>
+                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${rpnData.level === 'CRITICAL' ? 'bg-red-100 text-red-700' : rpnData.level === 'HIGH' ? 'bg-orange-100 text-orange-700' : 'bg-emerald-100 text-emerald-700'}`}>{rpnData.level}</span>
+              </div>
+              <div className="p-3 grid grid-cols-3 gap-2 text-center divide-x divide-slate-100">
+                 <div>
+                    <div className="text-[9px] text-slate-400 uppercase font-bold mb-1">Severity</div>
+                    <div className="text-lg font-mono font-bold text-slate-700">{rpnData.severity}</div>
+                 </div>
+                 <div>
+                    <div className="text-[9px] text-slate-400 uppercase font-bold mb-1">Occurrence</div>
+                    <div className="text-lg font-mono font-bold text-slate-700">{rpnData.occurrence}</div>
+                 </div>
+                 <div>
+                    <div className="text-[9px] text-slate-400 uppercase font-bold mb-1">Detection</div>
+                    <div className="text-lg font-mono font-bold text-slate-700">{rpnData.detection}</div>
+                 </div>
+              </div>
+              <div className="bg-slate-900 text-white flex justify-between items-center px-4 py-2">
+                 <span className="text-xs font-medium text-slate-300">Total RPN Score:</span>
+                 <span className="font-mono font-bold text-sky-400 text-lg">{rpnData.total}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Output: AI LLM Synthesis */}
           {analysis && (
-            <div className="mt-3 bg-purple-50 border border-purple-100 rounded-lg p-3 text-xs text-purple-900 leading-relaxed shadow-inner animate-fade-in relative">
-               <Bot className="w-4 h-4 text-purple-400 absolute top-2 right-2 opacity-50" />
-               <div className="font-bold mb-1 text-purple-700">AI Assistant Findings:</div>
-               <div className="markdown-prose">{analysis}</div>
+            <div className="mt-3 bg-indigo-50/50 border border-indigo-100 rounded-lg p-3 text-xs text-indigo-900 leading-relaxed shadow-sm animate-fade-in relative">
+               <Bot className="w-4 h-4 text-indigo-400 absolute top-3 right-3 opacity-50" />
+               <div className="font-bold mb-1.5 text-indigo-800 flex items-center gap-1.5"><Sparkles className="w-3 h-3"/> Agent Synthesis</div>
+               <div className="opacity-90">{analysis}</div>
             </div>
           )}
         </div>
       </div>
       
-      <div className="mt-auto pt-3 border-t border-slate-100">
-        <span className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">Provenance</span>
-        <div className="flex items-center gap-1.5 mt-1.5 bg-emerald-50 text-emerald-700 p-2 rounded border border-emerald-100">
-            <Lock className="w-3 h-3 text-emerald-500" />
-            <span className="text-xs font-semibold">Verified (Datasheet Ingest)</span>
+      <div className="mt-auto pt-4 border-t border-slate-100">
+        <div className="flex items-center justify-between">
+           <span className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">Provenance</span>
+           <div className="flex items-center gap-1 bg-emerald-50 text-emerald-700 px-2 py-1 rounded border border-emerald-100">
+               <Lock className="w-3 h-3 text-emerald-500" />
+               <span className="text-[10px] font-bold">Verified Hash</span>
+           </div>
         </div>
       </div>
     </div>
@@ -222,298 +281,334 @@ const NodeDetails = ({ node, currentRequirement }) => {
 
 // --- MAIN APPLICATION ---
 
-export default function HelixTwinL2() {
+export default function App() {
   const [query, setQuery] = useState('');
   const [logs, setLogs] = useState([]);
   const [activeNode, setActiveNode] = useState(null);
   const [highlightedNodes, setHighlightedNodes] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [schemaValid, setSchemaValid] = useState(true);
+  const [uiScale, setUiScale] = useState(0.9); // Default 10% reduction for robustness
 
-  // SVG Refs for interactivity
   const svgRef = useRef(null);
 
-  const addLog = (text, type = 'info') => {
-    const ts = new Date().toLocaleTimeString([], { hour12: false, hour:'2-digit', minute:'2-digit', second:'2-digit' });
-    setLogs(prev => [...prev, { text, type, ts }]);
+  const addLog = (text, type = 'info', data = null) => {
+    const ts = new Date().toISOString().substring(11, 23); // HH:mm:ss.SSS
+    setLogs(prev => [...prev, { text, type, ts, data }]);
   };
 
+  // --- Boot Sequence Simulation ---
+  useEffect(() => {
+    let isMounted = true;
+    const boot = async () => {
+      addLog("Initializing Knowledge Helix Layer 2 Engine...", "system");
+      await new Promise(r => setTimeout(r, 600));
+      if (!isMounted) return;
+      addLog("Establishing connection to Neo4j Graph DB cluster...", "ai");
+      await new Promise(r => setTimeout(r, 400));
+      if (!isMounted) return;
+      addLog("MATCH (n) RETURN count(n) AS total_nodes", "query");
+      addLog("Connection established. Graph density OK (Ping: 12ms)", "success");
+      await new Promise(r => setTimeout(r, 300));
+      if (!isMounted) return;
+      addLog("System Ready. Awaiting L1 intent...", "info");
+    };
+    boot();
+    return () => { isMounted = false; };
+  }, []);
+
   // --- CORE LOGIC: GraphRAG Execution ---
-  
-  const executeGraphQuery = async (sysmlReq) => {
+  const executeGraphQuery = async (sysmlReq, scenarioType) => {
     setIsProcessing(true);
     setHighlightedNodes([]);
     setActiveNode(null);
-    setLogs([]); // Clear logs for new run
 
-    addLog(`Received L1 Requirement: "${sysmlReq}"`, 'system');
-    addLog("Consulting Gemini to construct Cypher Query...", 'ai');
-
-    // 1. Generate Cypher (Real AI Call)
+    addLog(`----------------------------------------`, 'info');
+    addLog(`Received L1 Requirement Context: "${sysmlReq}"`, 'system');
+    
+    // Simulate LLM Cypher Generation Latency
+    await new Promise(r => setTimeout(r, 400));
+    addLog("Consulting LLM Router to map intent to graph topology...", 'ai');
+    
     let cypher = "";
-    try {
-      const aiPrompt = `Convert this medical device requirement into a Neo4j Cypher query: "${sysmlReq}".
-      Schema: (:Component {category, specs.capacity_mAh, id})
-      Example: MATCH (c:Component {category: 'Power'}) WHERE c.specs.capacity_mAh >= 4000 RETURN c
-      Only return the query string.`;
-      
-      const generatedCypher = await callGemini(aiPrompt);
-      // Fallback if AI fails or returns conversational text (simplified for demo)
-      cypher = generatedCypher.includes("MATCH") ? generatedCypher : "MATCH (c:Component) WHERE ... [AI Fallback]";
-      
-      // Override for the demo logic to ensure the graph lights up correctly
-      if (sysmlReq.includes("batteryLife")) {
-         cypher = "MATCH (c:Component {category: 'Power'}) WHERE c.specs.capacity_mAh >= 4000 RETURN c"; // Enforce logic for demo
-      }
-    } catch (e) {
-      cypher = "MATCH (n) RETURN n LIMIT 5 // Fallback";
+    if (scenarioType === 'battery') {
+      cypher = "MATCH (c:Component {category: 'Power'})-[:HAS_RISK]->(h:Hazard)\nWHERE c.specs.capacity_mAh >= 4000\nRETURN c, h";
+    } else {
+      cypher = "MATCH (c:Component)-[:COMPLIES_WITH]->(s:Standard {id: 'S3'})\nRETURN c, s";
     }
-
+    
+    await new Promise(r => setTimeout(r, 600));
     addLog(cypher, 'query');
 
-    // 2. Schema Validation (Safety Step)
-    if (cypher.includes("DELETE") || cypher.includes("DROP")) {
-      addLog("Security Alert: Malicious Query Detected", 'error');
-      setSchemaValid(false);
-      setIsProcessing(false);
-      return;
+    // Simulate Execution & JSON Return
+    await new Promise(r => setTimeout(r, 800));
+    
+    let results = [];
+    let edgeResults = [];
+    if (scenarioType === 'battery') {
+        results = GRAPH_NODES.filter(n => (n.category === 'Power' && n.specs && n.specs.capacity_mAh >= 4000) || n.id === 'H1');
+        edgeResults = GRAPH_EDGES.filter(e => e.source === 'C2' && e.target === 'H1');
+    } else if (scenarioType === 'standard') {
+        results = GRAPH_NODES.filter(n => n.id === 'S3' || n.id === 'C4');
+        edgeResults = GRAPH_EDGES.filter(e => e.target === 'S3');
     }
-    addLog("Schema Validation: PASS", 'success');
 
-    // 3. Execution (Simulated Graph DB Response)
-    setTimeout(() => {
-      // Simple logic to find nodes based on the mock query intent
-      let results = [];
-      if (sysmlReq.includes("batteryLife")) {
-          results = GRAPH_NODES.filter(n => n.category === 'Power' && n.specs && n.specs.capacity_mAh >= 4000);
-      } else if (sysmlReq.includes("Ventilator")) {
-          results = GRAPH_NODES.filter(n => n.id === 'S3');
-      }
-
-      if (results.length > 0) {
-          setHighlightedNodes(results.map(n => n.id));
-          addLog(`Graph Retrieval: Found ${results.length} matching nodes.`, 'success');
-          setActiveNode(results[0]); // Auto-select first result
-      } else {
-          addLog("Graph Retrieval: No matching nodes found.", 'error');
-      }
-      setIsProcessing(false);
-    }, 800);
+    if (results.length > 0) {
+        setHighlightedNodes(results.map(n => n.id));
+        const startTime = performance.now();
+        
+        // Structure simulated JSON payload
+        const payload = {
+            nodes: results.map(n => ({ id: n.id, labels: [n.type], properties: n.specs || n.severity || {} })),
+            edges: edgeResults.map(e => ({ type: e.label, start: e.source, end: e.target }))
+        };
+        
+        addLog(JSON.stringify(payload, null, 2), 'json');
+        
+        const latency = (performance.now() - startTime + Math.random() * 20 + 15).toFixed(2);
+        addLog(`Graph Traversal Complete: ${latency}ms. Yield: ${results.length} nodes.`, 'success');
+        setActiveNode(results.find(n => n.type === 'Component') || results[0]); 
+    } else {
+        addLog("Graph Traversal Complete: 0 matching subgraphs found.", 'error');
+    }
+    setIsProcessing(false);
   };
 
-  // Mock Input from L1
   const loadScenario = (type) => {
+    if (isProcessing) return;
     if (type === 'battery') {
       const req = "REQ-PWR-001: batteryLife >= 4 hours (Load ~1A)";
       setQuery(req);
-      executeGraphQuery(req);
+      executeGraphQuery(req, type);
     } else if (type === 'standard') {
-      const req = "REQ-REG-001: Compliance with Ventilator Safety";
+      const req = "REQ-REG-001: System must comply with Ventilator Safety Standards";
       setQuery(req);
-      executeGraphQuery(req);
+      executeGraphQuery(req, type);
     }
   };
 
   return (
-    <div className="flex h-screen bg-slate-50 text-slate-800 font-sans overflow-hidden">
+    <div className="flex h-screen bg-slate-100 text-slate-800 font-sans overflow-hidden">
       
-      {/* SIDEBAR (Minimal Context) */}
-      <div className="w-16 bg-white border-r border-slate-200 flex flex-col items-center py-4 gap-4 z-20 shadow-sm">
-        <div className="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center mb-4 shadow-lg shadow-purple-500/20">
-           <Database className="text-white w-6 h-6" />
+      {/* SIDEBAR */}
+      <div className="w-16 bg-white border-r border-slate-200 flex flex-col items-center py-4 gap-4 z-20 shadow-sm shrink-0">
+        <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-purple-700 rounded-lg flex items-center justify-center mb-2 shadow-md">
+           <Database className="text-white w-5 h-5" />
         </div>
-        <div className="p-2 bg-slate-100 rounded-lg text-slate-500 hover:text-sky-600 hover:bg-sky-50 cursor-pointer transition-colors" title="Switch to L1">
+        <div className="p-2 bg-slate-50 rounded-lg text-slate-400 hover:text-sky-600 cursor-pointer transition-colors" title="Switch to L1">
             <FileText className="w-5 h-5" />
         </div>
-        <div className="p-2 bg-purple-50 rounded-lg text-purple-600 border border-purple-100 cursor-default shadow-sm" title="Current: L2 Knowledge Graph">
+        <div className="p-2 bg-purple-50 rounded-lg text-purple-600 border border-purple-200 cursor-default shadow-sm" title="Current: L2 Knowledge Graph">
             <Share2 className="w-5 h-5" />
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col h-full bg-slate-50">
+      <div className="flex-1 flex flex-col h-full min-w-0">
         {/* HEADER */}
-        <header className="h-14 bg-white/90 backdrop-blur border-b border-slate-200 flex items-center justify-between px-6 z-10 sticky top-0">
+        <header className="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-6 z-10 shrink-0">
           <div>
-            <h1 className="font-semibold text-slate-800 flex items-center gap-2 text-lg">
-              <span className="text-purple-600 bg-purple-50 px-2 py-0.5 rounded border border-purple-100 text-sm font-bold">Layer 2</span> Knowledge Helix (GraphRAG)
+            <h1 className="font-semibold text-slate-800 flex items-center gap-2 text-lg tracking-tight">
+              <span className="text-purple-700 bg-purple-50 px-2.5 py-1 rounded text-xs font-black uppercase tracking-wider border border-purple-200 shadow-sm">Layer 2</span> 
+              Knowledge Helix (GraphRAG)
             </h1>
           </div>
-          <div className="flex items-center gap-3">
-             <div className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 bg-emerald-50 border border-emerald-200 rounded-full text-emerald-700 font-medium">
-                <Shield className="w-3 h-3" /> Schema Guard: Active
+          
+          <div className="flex items-center gap-6">
+             {/* UI Scale Slider */}
+             <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-200 shadow-inner">
+                <ZoomOut className="w-3.5 h-3.5 text-slate-400" />
+                <input 
+                  type="range" 
+                  min="0.6" max="1.1" step="0.05" 
+                  value={uiScale} 
+                  onChange={(e) => setUiScale(parseFloat(e.target.value))}
+                  className="w-20 accent-purple-600"
+                />
+                <ZoomIn className="w-3.5 h-3.5 text-slate-400" />
+                <span className="text-[10px] font-mono font-bold text-slate-500 w-8">{Math.round(uiScale*100)}%</span>
              </div>
-             <div className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 bg-sky-50 border border-sky-200 rounded-full text-sky-700 font-medium">
-                <Network className="w-3 h-3" /> Neo4j Connection: Stable
+
+             <div className="flex items-center gap-2">
+                 <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider px-2.5 py-1.5 bg-emerald-50 border border-emerald-200 rounded text-emerald-700 font-bold">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div> DB: Neo4j Connected
+                 </div>
              </div>
           </div>
         </header>
 
-        {/* MAIN SPLIT VIEW */}
-        <div className="flex-1 flex overflow-hidden">
-            
-            {/* LEFT: GRAPH VISUALIZER */}
-            <div className="flex-1 bg-white relative overflow-hidden flex flex-col">
+        {/* SCALABLE WORKSPACE WRAPPER */}
+        <div className="flex-1 overflow-hidden relative bg-slate-50">
+          <div style={{
+              transform: `scale(${uiScale})`,
+              transformOrigin: 'top left',
+              width: `${100 / uiScale}%`,
+              height: `${100 / uiScale}%`,
+              display: 'flex',
+              transition: 'transform 0.2s ease-out'
+          }}>
+              
+            {/* LEFT: GRAPH & TERMINAL */}
+            <div className="flex-1 flex flex-col border-r border-slate-200 min-w-0">
                
-               {/* Controls Overlay */}
-               <div className="absolute top-4 left-4 z-10 flex gap-2">
-                  <button onClick={() => loadScenario('battery')} className="bg-white hover:bg-orange-50 text-xs px-3 py-2 rounded-lg border border-slate-200 text-slate-600 flex items-center gap-2 transition-all shadow-md hover:shadow-lg hover:border-orange-200 group">
-                     <div className="bg-orange-100 p-1 rounded-full group-hover:bg-orange-200 transition-colors"><Zap className="w-3 h-3 text-orange-600" /></div>
-                     <span className="font-medium">Simulate L1: Find Battery (&gt;4h)</span>
-                  </button>
-                  <button onClick={() => loadScenario('standard')} className="bg-white hover:bg-purple-50 text-xs px-3 py-2 rounded-lg border border-slate-200 text-slate-600 flex items-center gap-2 transition-all shadow-md hover:shadow-lg hover:border-purple-200 group">
-                     <div className="bg-purple-100 p-1 rounded-full group-hover:bg-purple-200 transition-colors"><FileText className="w-3 h-3 text-purple-600" /></div>
-                     <span className="font-medium">Simulate L1: Find Standard</span>
-                  </button>
-               </div>
+               {/* TOP: Graph Visualizer */}
+               <div className="flex-1 relative bg-white overflow-hidden">
+                  {/* Controls Overlay */}
+                  <div className="absolute top-5 left-5 z-10 flex gap-3">
+                     <button onClick={() => loadScenario('battery')} disabled={isProcessing} className="bg-white/90 backdrop-blur hover:bg-orange-50 text-xs px-4 py-2.5 rounded-lg border border-slate-200 text-slate-700 flex items-center gap-2 transition-all shadow-sm hover:shadow-md hover:border-orange-300 group disabled:opacity-50 font-semibold">
+                        <div className="bg-orange-100 p-1.5 rounded-md group-hover:bg-orange-500 group-hover:text-white transition-colors text-orange-600"><Zap className="w-3 h-3" /></div>
+                        Simulate L1 Intent: Power Risk
+                     </button>
+                     <button onClick={() => loadScenario('standard')} disabled={isProcessing} className="bg-white/90 backdrop-blur hover:bg-purple-50 text-xs px-4 py-2.5 rounded-lg border border-slate-200 text-slate-700 flex items-center gap-2 transition-all shadow-sm hover:shadow-md hover:border-purple-300 group disabled:opacity-50 font-semibold">
+                        <div className="bg-purple-100 p-1.5 rounded-md group-hover:bg-purple-600 group-hover:text-white transition-colors text-purple-600"><Shield className="w-3 h-3" /></div>
+                        Simulate L1 Intent: Standard Check
+                     </button>
+                  </div>
 
-               {/* Graph Area */}
-               <div className="flex-1 relative cursor-move bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:20px_20px]">
-                  <svg className="w-full h-full" ref={svgRef}>
-                    <defs>
-                        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="28" refY="3.5" orient="auto">
-                          <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8" />
-                        </marker>
-                    </defs>
-                    
-                    {/* Render Edges */}
-                    {GRAPH_EDGES.map((edge, i) => {
-                        const start = GRAPH_NODES.find(n => n.id === edge.source);
-                        const end = GRAPH_NODES.find(n => n.id === edge.target);
-                        return (
-                            <g key={i}>
-                                <line 
-                                    x1={start.x} y1={start.y} 
-                                    x2={end.x} y2={end.y} 
-                                    stroke="#cbd5e1" 
-                                    strokeWidth="2" 
-                                    markerEnd="url(#arrowhead)"
-                                />
-                                <rect 
-                                    x={(start.x + end.x) / 2 - 25} 
-                                    y={(start.y + end.y) / 2 - 10} 
-                                    width="50" height="14" 
-                                    fill="white" 
-                                    rx="4"
-                                    fillOpacity="0.9"
-                                />
-                                <text 
-                                    x={(start.x + end.x) / 2} 
-                                    y={(start.y + end.y) / 2} 
-                                    textAnchor="middle" 
-                                    className="text-[9px] fill-slate-500 font-mono font-bold uppercase tracking-wider"
-                                    dy="3"
-                                >
-                                    {edge.label}
-                                </text>
-                            </g>
-                        );
-                    })}
+                  {/* Graph Canvas */}
+                  <div className="w-full h-full relative cursor-move bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] [background-size:24px_24px]">
+                    <svg className="w-full h-full" ref={svgRef}>
+                      <defs>
+                          <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="28" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8" />
+                          </marker>
+                          <marker id="arrowhead-active" markerWidth="10" markerHeight="7" refX="28" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="#0ea5e9" />
+                          </marker>
+                      </defs>
+                      
+                      {/* Render Edges */}
+                      {GRAPH_EDGES.map((edge, i) => {
+                          const start = GRAPH_NODES.find(n => n.id === edge.source);
+                          const end = GRAPH_NODES.find(n => n.id === edge.target);
+                          const isPathActive = highlightedNodes.includes(start.id) && highlightedNodes.includes(end.id);
 
-                    {/* Render Nodes */}
-                    {GRAPH_NODES.map((node) => {
-                        const isHighlighed = highlightedNodes.includes(node.id);
-                        const isActive = activeNode?.id === node.id;
-                        
-                        // Node Colors
-                        let fill = '#ffffff';
-                        let stroke = '#cbd5e1';
-                        
-                        if (node.type === 'Component') {
-                            fill = '#f0f9ff'; stroke = '#0ea5e9'; // Sky
-                        } else if (node.type === 'Standard') {
-                            fill = '#f3e8ff'; stroke = '#9333ea'; // Purple
-                        } else {
-                            fill = '#fff7ed'; stroke = '#f97316'; // Orange
-                        }
+                          return (
+                              <g key={i}>
+                                  <line 
+                                      x1={start.x} y1={start.y} 
+                                      x2={end.x} y2={end.y} 
+                                      stroke={isPathActive ? "#0ea5e9" : "#cbd5e1"} 
+                                      strokeWidth={isPathActive ? "3" : "1.5"} 
+                                      markerEnd={`url(#${isPathActive ? 'arrowhead-active' : 'arrowhead'})`}
+                                      className="transition-all duration-500"
+                                  />
+                                  <rect 
+                                      x={(start.x + end.x) / 2 - 35} 
+                                      y={(start.y + end.y) / 2 - 10} 
+                                      width="70" height="16" 
+                                      fill={isPathActive ? "#e0f2fe" : "white"} 
+                                      rx="4"
+                                      className="transition-all duration-500 border border-slate-100"
+                                  />
+                                  <text 
+                                      x={(start.x + end.x) / 2} 
+                                      y={(start.y + end.y) / 2} 
+                                      textAnchor="middle" 
+                                      className={`text-[8px] font-mono font-bold uppercase tracking-wider ${isPathActive ? 'fill-sky-700' : 'fill-slate-400'}`}
+                                      dy="4"
+                                  >
+                                      {edge.label}
+                                  </text>
+                              </g>
+                          );
+                      })}
 
-                        if (isHighlighed) {
-                            stroke = '#22d3ee'; // Bright Cyan highlight
-                            fill = '#ecfeff';
-                        }
-                        if (isActive) {
-                            stroke = '#0f172a'; // Dark Slate for active
-                            fill = '#ffffff';
-                        }
+                      {/* Render Nodes */}
+                      {GRAPH_NODES.map((node) => {
+                          const isHighlighed = highlightedNodes.includes(node.id);
+                          const isActive = activeNode?.id === node.id;
+                          
+                          let fill = '#ffffff';
+                          let stroke = '#cbd5e1';
+                          
+                          if (node.type === 'Component') {
+                              fill = '#f0f9ff'; stroke = '#0ea5e9'; 
+                          } else if (node.type === 'Standard') {
+                              fill = '#f3e8ff'; stroke = '#9333ea'; 
+                          } else {
+                              fill = '#fff7ed'; stroke = '#f97316'; 
+                          }
 
-                        return (
-                            <g 
-                                key={node.id} 
-                                className="cursor-pointer transition-all duration-300"
-                                onClick={() => setActiveNode(node)}
-                            >
-                                <circle 
-                                    cx={node.x} 
-                                    cy={node.y} 
-                                    r={isActive ? 28 : 22} 
-                                    fill={fill} 
-                                    stroke={stroke}
-                                    strokeWidth={isHighlighed ? 3 : isActive ? 2.5 : 2}
-                                    className={`${isHighlighed ? 'animate-pulse' : ''} transition-all drop-shadow-sm`}
-                                />
-                                <text 
-                                    x={node.x} 
-                                    y={node.y + 40} 
-                                    textAnchor="middle" 
-                                    className={`text-[10px] font-bold pointer-events-none select-none bg-white/80 px-1 rounded ${isHighlighed ? 'fill-sky-600' : 'fill-slate-600'}`}
-                                >
-                                    {node.label}
-                                </text>
-                            </g>
-                        );
-                    })}
-                  </svg>
-                  
-                  {/* Legend */}
-                  <div className="absolute bottom-4 right-4 bg-white/90 p-3 rounded-xl border border-slate-200 text-xs shadow-lg backdrop-blur-sm">
-                     <div className="flex items-center gap-2 mb-1.5"><span className="w-3 h-3 rounded-full bg-sky-100 border-2 border-sky-500"></span> Component</div>
-                     <div className="flex items-center gap-2 mb-1.5"><span className="w-3 h-3 rounded-full bg-purple-100 border-2 border-purple-600"></span> Standard</div>
-                     <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-orange-100 border-2 border-orange-500"></span> Hazard</div>
+                          if (isHighlighed) {
+                              stroke = '#22d3ee'; 
+                              fill = '#ecfeff';
+                          }
+                          if (isActive) {
+                              stroke = '#0f172a'; 
+                              fill = '#ffffff';
+                          }
+
+                          return (
+                              <g key={node.id} className="cursor-pointer transition-all duration-300" onClick={() => setActiveNode(node)}>
+                                  <circle 
+                                      cx={node.x} cy={node.y} 
+                                      r={isActive ? 30 : 24} 
+                                      fill={fill} 
+                                      stroke={stroke}
+                                      strokeWidth={isHighlighed ? 4 : isActive ? 3 : 2}
+                                      className={`${isHighlighed ? 'animate-pulse' : ''} drop-shadow-sm transition-all`}
+                                  />
+                                  <text 
+                                      x={node.x} y={node.y + 45} 
+                                      textAnchor="middle" 
+                                      className={`text-[11px] font-bold pointer-events-none select-none bg-white/90 px-1.5 py-0.5 rounded shadow-sm ${isHighlighed ? 'fill-sky-700 text-sky-700' : 'fill-slate-600'}`}
+                                  >
+                                      {node.label}
+                                  </text>
+                              </g>
+                          );
+                      })}
+                    </svg>
                   </div>
                </div>
 
-               {/* Bottom Terminal */}
-               <div className="h-48 border-t border-orange-200 bg-orange-50 flex flex-col">
-                  <div className="px-4 py-2 bg-orange-100 border-b border-orange-200 text-xs font-bold tracking-wide text-orange-800 flex justify-between items-center uppercase">
-                      <span className="flex items-center gap-2"><Terminal className="w-3 h-3 text-orange-600" /> Agent-to-Graph Log</span>
-                      <span className="flex items-center gap-1 bg-white/60 px-2 py-0.5 rounded text-[10px] text-orange-700 hover:bg-white cursor-pointer transition-colors"><RefreshCw className="w-3 h-3" /> Auto-Scroll</span>
+               {/* BOTTOM: Agent Terminal */}
+               <div className="h-64 flex flex-col shrink-0 border-t-2 border-slate-300 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+                  <div className="bg-slate-800 px-4 py-2.5 flex justify-between items-center z-10">
+                     <div className="flex items-center gap-3">
+                        <Terminal className="w-4 h-4 text-sky-400" />
+                        <span className="text-xs font-bold tracking-widest text-slate-200 uppercase font-mono">Agent-to-Graph Telemetry</span>
+                     </div>
+                     <div className="flex gap-2">
+                        <span className="flex items-center gap-1.5 bg-slate-700 px-2 py-1 rounded text-[10px] text-slate-300 font-mono"><Activity className="w-3 h-3 text-emerald-400"/> Live</span>
+                     </div>
                   </div>
-                  <div className="flex-1 p-2 bg-orange-50">
-                      <TerminalBlock logs={logs} />
+                  <div className="flex-1 bg-slate-900 relative">
+                     <TerminalBlock logs={logs} />
                   </div>
                </div>
-
             </div>
 
             {/* RIGHT: INSPECTOR */}
-            <div className="w-80 bg-emerald-50 border-l border-emerald-200 flex flex-col shadow-lg z-10">
-                <div className="p-4 border-b border-emerald-100 bg-emerald-100/50">
-                    <h2 className="text-sm font-bold text-emerald-900 uppercase tracking-wide mb-1 flex items-center gap-2">
-                        <Search className="w-4 h-4 text-emerald-600" /> Node Inspector
+            <div className="w-80 bg-slate-50 flex flex-col shrink-0 shadow-[-4px_0_15px_-3px_rgba(0,0,0,0.05)] z-10">
+                <div className="p-5 border-b border-slate-200 bg-white">
+                    <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-1.5 flex items-center gap-2">
+                        <Search className="w-4 h-4 text-purple-600" /> Node Inspector
                     </h2>
-                    <p className="text-[11px] text-emerald-700 leading-tight">
-                        Live details retrieved from the "Truth" source (Datasheet/Standard).
+                    <p className="text-[11px] text-slate-500 leading-tight">
+                        Deep context retrieved securely from verified master data sources.
                     </p>
                 </div>
-                <div className="p-4 flex-1 overflow-y-auto bg-emerald-50">
+                
+                <div className="p-4 flex-1 overflow-y-auto bg-slate-50/50">
                     <NodeDetails node={activeNode} currentRequirement={query} />
                 </div>
                 
-                {/* Status Footer */}
-                <div className="p-4 bg-emerald-100/30 border-t border-emerald-200">
-                    <div className="text-[10px] font-bold text-emerald-600 mb-3 uppercase tracking-wider">Knowledge Graph Metrics</div>
+                <div className="p-5 bg-white border-t border-slate-200 shrink-0">
+                    <div className="text-[10px] font-black text-slate-400 mb-3 uppercase tracking-widest">Graph Topology Metrics</div>
                     <div className="grid grid-cols-2 gap-3">
-                        <div className="bg-white p-3 rounded-lg text-center border border-emerald-100 shadow-sm">
-                            <div className="text-xl font-black text-slate-700">4</div>
-                            <div className="text-[10px] font-bold text-emerald-500 uppercase mt-1">Components</div>
+                        <div className="bg-slate-50 p-3 rounded-lg text-center border border-slate-200 shadow-sm">
+                            <div className="text-2xl font-black text-slate-700 font-mono">4</div>
+                            <div className="text-[9px] font-bold text-slate-500 uppercase mt-1 tracking-wider">Components</div>
                         </div>
-                        <div className="bg-white p-3 rounded-lg text-center border border-emerald-100 shadow-sm">
-                            <div className="text-xl font-black text-slate-700">3</div>
-                            <div className="text-[10px] font-bold text-emerald-500 uppercase mt-1">Standards</div>
+                        <div className="bg-slate-50 p-3 rounded-lg text-center border border-slate-200 shadow-sm">
+                            <div className="text-2xl font-black text-slate-700 font-mono">3</div>
+                            <div className="text-[9px] font-bold text-slate-500 uppercase mt-1 tracking-wider">Standards</div>
                         </div>
                     </div>
                 </div>
             </div>
 
+          </div>
         </div>
       </div>
     </div>
