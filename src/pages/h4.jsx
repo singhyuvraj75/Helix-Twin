@@ -138,7 +138,7 @@ const RMSEChart = ({ history }) => {
   const yScale = (v) => height - padding.bottom - (v / 0.4) * (height - padding.top - padding.bottom);
 
   return (
-    <div className="bg-white rounded-lg border border-slate-200 shadow-sm relative h-28 mt-3">
+    <div className="bg-white rounded-lg border border-slate-200 shadow-sm relative h-28 mt-4 shrink-0">
       <div className="absolute top-2 left-10 text-[9px] font-bold text-slate-400 uppercase tracking-widest">Residual Error (RMSE)</div>
       <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
         {/* Axes */}
@@ -410,10 +410,10 @@ export default function HelixTwinL4() {
            </div>
         </header>
 
-        {/* Charts Container */}
-        <div className="flex-1 p-6 overflow-hidden flex flex-col relative z-10 max-w-[1200px] mx-auto w-full">
+        {/* Charts Container - Added overflow-y-auto to allow scrolling */}
+        <div className="flex-1 p-6 overflow-y-auto flex flex-col relative z-10 max-w-[1200px] mx-auto w-full">
            
-           <div className="flex-1 flex flex-col relative">
+           <div className="flex flex-col relative min-h-min pb-8">
               {/* Primary Visualizer */}
               <div className="flex items-center gap-2 mb-2">
                  <BarChart2 className="w-4 h-4 text-slate-500" />
@@ -433,7 +433,7 @@ export default function HelixTwinL4() {
 
               {/* Success Overlay */}
               {step === 4 && (
-                 <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-20 flex items-center justify-center rounded-lg">
+                 <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-20 flex items-center justify-center rounded-lg mt-8">
                     <div className="bg-white border border-slate-200 p-6 rounded-xl shadow-2xl flex flex-col items-center ring-4 ring-emerald-50 animate-in fade-in zoom-in duration-300">
                        <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center mb-3">
                           <CheckCircle className="w-6 h-6 text-emerald-600" />
