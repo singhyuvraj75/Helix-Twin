@@ -198,14 +198,14 @@ const NodeDetails = ({ node, currentRequirement }) => {
   };
 
   return (
-    <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col h-full relative overflow-hidden">
+    <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col relative">
       <div className={`flex items-center gap-3 mb-4 pb-3 border-b border-slate-200/60 ${getHeaderColor(node.type)} p-3 rounded-lg -mx-1`}>
         {getIcon(node.type)}
         <span className="font-bold text-lg">{node.label}</span>
         <span className="text-[10px] uppercase tracking-wider bg-white/90 px-2 py-1 rounded ml-auto font-bold shadow-sm">{node.type}</span>
       </div>
       
-      <div className="space-y-3 px-1 flex-1 overflow-y-auto">
+      <div className="space-y-3 px-1">
         <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Node Properties</div>
         {node.specs && Object.entries(node.specs).map(([k, v]) => (
           <div key={k} className="flex justify-between items-center text-sm group border-b border-slate-100 pb-1.5 last:border-0">
@@ -266,7 +266,7 @@ const NodeDetails = ({ node, currentRequirement }) => {
         </div>
       </div>
       
-      <div className="mt-auto pt-4 border-t border-slate-100">
+      <div className="mt-6 pt-4 border-t border-slate-100">
         <div className="flex items-center justify-between">
            <span className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">Provenance</span>
            <div className="flex items-center gap-1 bg-emerald-50 text-emerald-700 px-2 py-1 rounded border border-emerald-100">
@@ -475,94 +475,97 @@ export default function App() {
                           </marker>
                       </defs>
                       
-                      {/* Render Edges */}
-                      {GRAPH_EDGES.map((edge, i) => {
-                          const start = GRAPH_NODES.find(n => n.id === edge.source);
-                          const end = GRAPH_NODES.find(n => n.id === edge.target);
-                          const isPathActive = highlightedNodes.includes(start.id) && highlightedNodes.includes(end.id);
+                      {/* Graph Center Shifting (Eliminates vacant left space) */}
+                      <g transform="translate(60, 30)">
+                        {/* Render Edges */}
+                        {GRAPH_EDGES.map((edge, i) => {
+                            const start = GRAPH_NODES.find(n => n.id === edge.source);
+                            const end = GRAPH_NODES.find(n => n.id === edge.target);
+                            const isPathActive = highlightedNodes.includes(start.id) && highlightedNodes.includes(end.id);
 
-                          return (
-                              <g key={i}>
-                                  <line 
-                                      x1={start.x} y1={start.y} 
-                                      x2={end.x} y2={end.y} 
-                                      stroke={isPathActive ? "#0ea5e9" : "#cbd5e1"} 
-                                      strokeWidth={isPathActive ? "3" : "1.5"} 
-                                      markerEnd={`url(#${isPathActive ? 'arrowhead-active' : 'arrowhead'})`}
-                                      className="transition-all duration-500"
-                                  />
-                                  <rect 
-                                      x={(start.x + end.x) / 2 - 35} 
-                                      y={(start.y + end.y) / 2 - 10} 
-                                      width="70" height="16" 
-                                      fill={isPathActive ? "#e0f2fe" : "white"} 
-                                      rx="4"
-                                      className="transition-all duration-500 border border-slate-100"
-                                  />
-                                  <text 
-                                      x={(start.x + end.x) / 2} 
-                                      y={(start.y + end.y) / 2} 
-                                      textAnchor="middle" 
-                                      className={`text-[8px] font-mono font-bold uppercase tracking-wider ${isPathActive ? 'fill-sky-700' : 'fill-slate-400'}`}
-                                      dy="4"
-                                  >
-                                      {edge.label}
-                                  </text>
-                              </g>
-                          );
-                      })}
+                            return (
+                                <g key={i}>
+                                    <line 
+                                        x1={start.x} y1={start.y} 
+                                        x2={end.x} y2={end.y} 
+                                        stroke={isPathActive ? "#0ea5e9" : "#cbd5e1"} 
+                                        strokeWidth={isPathActive ? "3" : "1.5"} 
+                                        markerEnd={`url(#${isPathActive ? 'arrowhead-active' : 'arrowhead'})`}
+                                        className="transition-all duration-500"
+                                    />
+                                    <rect 
+                                        x={(start.x + end.x) / 2 - 35} 
+                                        y={(start.y + end.y) / 2 - 10} 
+                                        width="70" height="16" 
+                                        fill={isPathActive ? "#e0f2fe" : "white"} 
+                                        rx="4"
+                                        className="transition-all duration-500 border border-slate-100"
+                                    />
+                                    <text 
+                                        x={(start.x + end.x) / 2} 
+                                        y={(start.y + end.y) / 2} 
+                                        textAnchor="middle" 
+                                        className={`text-[8px] font-mono font-bold uppercase tracking-wider ${isPathActive ? 'fill-sky-700' : 'fill-slate-400'}`}
+                                        dy="4"
+                                    >
+                                        {edge.label}
+                                    </text>
+                                </g>
+                            );
+                        })}
 
-                      {/* Render Nodes */}
-                      {GRAPH_NODES.map((node) => {
-                          const isHighlighed = highlightedNodes.includes(node.id);
-                          const isActive = activeNode?.id === node.id;
-                          
-                          let fill = '#ffffff';
-                          let stroke = '#cbd5e1';
-                          
-                          if (node.type === 'Component') {
-                              fill = '#f0f9ff'; stroke = '#0ea5e9'; 
-                          } else if (node.type === 'Standard') {
-                              fill = '#f3e8ff'; stroke = '#9333ea'; 
-                          } else {
-                              fill = '#fff7ed'; stroke = '#f97316'; 
-                          }
+                        {/* Render Nodes */}
+                        {GRAPH_NODES.map((node) => {
+                            const isHighlighed = highlightedNodes.includes(node.id);
+                            const isActive = activeNode?.id === node.id;
+                            
+                            let fill = '#ffffff';
+                            let stroke = '#cbd5e1';
+                            
+                            if (node.type === 'Component') {
+                                fill = '#f0f9ff'; stroke = '#0ea5e9'; 
+                            } else if (node.type === 'Standard') {
+                                fill = '#f3e8ff'; stroke = '#9333ea'; 
+                            } else {
+                                fill = '#fff7ed'; stroke = '#f97316'; 
+                            }
 
-                          if (isHighlighed) {
-                              stroke = '#22d3ee'; 
-                              fill = '#ecfeff';
-                          }
-                          if (isActive) {
-                              stroke = '#0f172a'; 
-                              fill = '#ffffff';
-                          }
+                            if (isHighlighed) {
+                                stroke = '#22d3ee'; 
+                                fill = '#ecfeff';
+                            }
+                            if (isActive) {
+                                stroke = '#0f172a'; 
+                                fill = '#ffffff';
+                            }
 
-                          return (
-                              <g key={node.id} className="cursor-pointer transition-all duration-300" onClick={() => setActiveNode(node)}>
-                                  <circle 
-                                      cx={node.x} cy={node.y} 
-                                      r={isActive ? 30 : 24} 
-                                      fill={fill} 
-                                      stroke={stroke}
-                                      strokeWidth={isHighlighed ? 4 : isActive ? 3 : 2}
-                                      className={`${isHighlighed ? 'animate-pulse' : ''} drop-shadow-sm transition-all`}
-                                  />
-                                  <text 
-                                      x={node.x} y={node.y + 45} 
-                                      textAnchor="middle" 
-                                      className={`text-[11px] font-bold pointer-events-none select-none bg-white/90 px-1.5 py-0.5 rounded shadow-sm ${isHighlighed ? 'fill-sky-700 text-sky-700' : 'fill-slate-600'}`}
-                                  >
-                                      {node.label}
-                                  </text>
-                              </g>
-                          );
-                      })}
+                            return (
+                                <g key={node.id} className="cursor-pointer transition-all duration-300" onClick={() => setActiveNode(node)}>
+                                    <circle 
+                                        cx={node.x} cy={node.y} 
+                                        r={isActive ? 30 : 24} 
+                                        fill={fill} 
+                                        stroke={stroke}
+                                        strokeWidth={isHighlighed ? 4 : isActive ? 3 : 2}
+                                        className={`${isHighlighed ? 'animate-pulse' : ''} drop-shadow-sm transition-all`}
+                                    />
+                                    <text 
+                                        x={node.x} y={node.y + 45} 
+                                        textAnchor="middle" 
+                                        className={`text-[11px] font-bold pointer-events-none select-none bg-white/90 px-1.5 py-0.5 rounded shadow-sm ${isHighlighed ? 'fill-sky-700 text-sky-700' : 'fill-slate-600'}`}
+                                    >
+                                        {node.label}
+                                    </text>
+                                </g>
+                            );
+                        })}
+                      </g>
                     </svg>
                   </div>
                </div>
 
                {/* BOTTOM: Agent Terminal */}
-               <div className="h-64 flex flex-col shrink-0 border-t-2 border-slate-300 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+               <div className="h-56 flex flex-col shrink-0 border-t-2 border-slate-300 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
                   <div className="bg-slate-800 px-4 py-2.5 flex justify-between items-center z-10">
                      <div className="flex items-center gap-3">
                         <Terminal className="w-4 h-4 text-sky-400" />
@@ -578,33 +581,40 @@ export default function App() {
                </div>
             </div>
 
-            {/* RIGHT: INSPECTOR */}
-            <div className="w-80 bg-slate-50 flex flex-col shrink-0 shadow-[-4px_0_15px_-3px_rgba(0,0,0,0.05)] z-10">
-                <div className="p-5 border-b border-slate-200 bg-white">
-                    <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-1.5 flex items-center gap-2">
-                        <Search className="w-4 h-4 text-purple-600" /> Node Inspector
-                    </h2>
-                    <p className="text-[11px] text-slate-500 leading-tight">
-                        Deep context retrieved securely from verified master data sources.
-                    </p>
-                </div>
-                
-                <div className="p-4 flex-1 overflow-y-auto bg-slate-50/50">
-                    <NodeDetails node={activeNode} currentRequirement={query} />
-                </div>
-                
-                <div className="p-5 bg-white border-t border-slate-200 shrink-0">
-                    <div className="text-[10px] font-black text-slate-400 mb-3 uppercase tracking-widest">Graph Topology Metrics</div>
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="bg-slate-50 p-3 rounded-lg text-center border border-slate-200 shadow-sm">
-                            <div className="text-2xl font-black text-slate-700 font-mono">4</div>
-                            <div className="text-[9px] font-bold text-slate-500 uppercase mt-1 tracking-wider">Components</div>
-                        </div>
-                        <div className="bg-slate-50 p-3 rounded-lg text-center border border-slate-200 shadow-sm">
-                            <div className="text-2xl font-black text-slate-700 font-mono">3</div>
-                            <div className="text-[9px] font-bold text-slate-500 uppercase mt-1 tracking-wider">Standards</div>
+            {/* RIGHT: INSPECTOR (Expanded width & Scrollable Frame) */}
+            <div className="w-[450px] bg-slate-50 flex flex-col shrink-0 shadow-[-4px_0_15px_-3px_rgba(0,0,0,0.05)] z-10 border-l border-slate-200 overflow-y-auto">
+                <div className="min-h-full flex flex-col">
+                    
+                    {/* Sticky Header */}
+                    <div className="p-5 border-b border-slate-200 bg-white shrink-0 sticky top-0 z-20 shadow-sm">
+                        <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-1.5 flex items-center gap-2">
+                            <Search className="w-4 h-4 text-purple-600" /> Node Inspector
+                        </h2>
+                        <p className="text-[11px] text-slate-500 leading-tight">
+                            Deep context retrieved securely from verified master data sources.
+                        </p>
+                    </div>
+                    
+                    {/* Expanding Node Content */}
+                    <div className="p-4 flex-1 bg-slate-50/50">
+                        <NodeDetails node={activeNode} currentRequirement={query} />
+                    </div>
+                    
+                    {/* Auto-Anchoring Footer */}
+                    <div className="p-5 bg-white border-t border-slate-200 shrink-0 mt-auto">
+                        <div className="text-[10px] font-black text-slate-400 mb-3 uppercase tracking-widest">Graph Topology Metrics</div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="bg-slate-50 p-3 rounded-lg text-center border border-slate-200 shadow-sm">
+                                <div className="text-2xl font-black text-slate-700 font-mono">4</div>
+                                <div className="text-[9px] font-bold text-slate-500 uppercase mt-1 tracking-wider">Components</div>
+                            </div>
+                            <div className="bg-slate-50 p-3 rounded-lg text-center border border-slate-200 shadow-sm">
+                                <div className="text-2xl font-black text-slate-700 font-mono">3</div>
+                                <div className="text-[9px] font-bold text-slate-500 uppercase mt-1 tracking-wider">Standards</div>
+                            </div>
                         </div>
                     </div>
+
                 </div>
             </div>
 
