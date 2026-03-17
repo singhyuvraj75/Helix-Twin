@@ -23,8 +23,10 @@ const LiveChart = ({ data, color, min, max, label, unit, threshold = null }) => 
 
     const ctx = canvas.getContext('2d');
     
-    // High-DPI Canvas Setup for crisp lines
+    // High-DPI Canvas Setup for crisp lines adapting to dynamic flex size
     const rect = container.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return;
+    
     canvas.width = rect.width * 2;
     canvas.height = rect.height * 2;
     ctx.scale(2, 2);
@@ -107,8 +109,8 @@ const LiveChart = ({ data, color, min, max, label, unit, threshold = null }) => 
   }, [data, color, min, max, threshold]);
 
   return (
-    <div ref={containerRef} className="relative h-28 bg-white rounded-2xl border border-slate-200 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] overflow-hidden transition-all hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.08)]">
-      <canvas ref={canvasRef} className="w-full h-full" style={{ width: '100%', height: '100%' }} />
+    <div ref={containerRef} className="relative flex-1 w-full min-h-0 bg-white rounded-2xl border border-slate-200 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] overflow-hidden transition-all hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.08)]">
+      <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" style={{ display: 'block' }} />
       <div className="absolute top-3 left-3 flex items-center gap-2">
         <div className="text-[10px] font-bold font-mono text-slate-600 bg-white/95 backdrop-blur px-2.5 py-1 rounded-md border border-slate-100 shadow-sm">
           {label}
@@ -134,7 +136,6 @@ export default function HelixTwinL5() {
   const [isRunning, setIsRunning] = useState(false);
   const [time, setTime] = useState(0);
   const [logs, setLogs] = useState([]);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   // Twin States
   const [pressure, setPressure] = useState(Array(100).fill(0)); 
@@ -263,228 +264,222 @@ export default function HelixTwinL5() {
 
 
   return (
-    // Transform wraps the entire application to reduce scale by 10% exactly while maintaining crispness
-    <div className="w-screen h-screen bg-slate-200 overflow-hidden flex justify-center items-center">
-      <div 
-        className="flex w-[111.11%] h-[111.11%] bg-slate-50 text-slate-800 font-sans origin-center shadow-2xl"
-        style={{ transform: 'scale(0.9)' }}
-      >
+    // Replaced the scaled box with an absolute fullscreen bleed container. No empty spaces.
+    <div className="w-screen h-screen flex bg-slate-50 text-slate-800 font-sans overflow-hidden">
         
-        {/* SIDEBAR: MISSION CONTROL */}
-        <div className="w-[340px] bg-white border-r border-slate-200 flex flex-col z-20 shadow-[4px_0_24px_rgba(0,0,0,0.02)] flex-shrink-0">
-          
-          {/* Deep Blue Premium Sidebar Header */}
-          <div className="p-6 bg-gradient-to-br from-blue-900 via-blue-800 to-blue-950 relative overflow-hidden">
-            {/* Background Glow Effect */}
-            <div className="absolute -top-10 -right-10 w-40 h-40 bg-blue-500 rounded-full blur-[50px] opacity-30"></div>
-            <div className="flex items-center gap-4 relative z-10">
-              <div className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/20 shadow-xl">
-                <ActivitySquare className="text-white w-7 h-7" />
+      {/* SIDEBAR: MISSION CONTROL */}
+      <div className="w-[360px] bg-white border-r border-slate-200 flex flex-col z-20 shadow-[4px_0_24px_rgba(0,0,0,0.02)] flex-shrink-0 h-full">
+        
+        {/* Deep Blue Premium Sidebar Header */}
+        <div className="p-6 bg-gradient-to-br from-blue-900 via-blue-800 to-blue-950 relative overflow-hidden shrink-0">
+          <div className="absolute -top-10 -right-10 w-40 h-40 bg-blue-500 rounded-full blur-[50px] opacity-30"></div>
+          <div className="flex items-center gap-4 relative z-10">
+            <div className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/20 shadow-xl">
+              <ActivitySquare className="text-white w-7 h-7" />
+            </div>
+            <div>
+              <span className="font-extrabold text-2xl tracking-tight text-white drop-shadow-sm">Helix<span className="text-cyan-400">Twin</span></span>
+              <div className="text-[10px] text-blue-200/90 uppercase tracking-[0.25em] font-mono mt-0.5 font-semibold">L5 Co-Simulation</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-6 space-y-6 flex-1 overflow-y-auto custom-scrollbar">
+
+          {/* Simulation Master */}
+          <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+              <Cpu className="w-4 h-4 text-blue-500" /> Simulation Master
+            </div>
+            
+            <button
+              onClick={() => setIsRunning(!isRunning)}
+              className={`w-full py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all ${
+                isRunning 
+                  ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-[0_8px_20px_-4px_rgba(245,158,11,0.4)] hover:shadow-[0_10px_25px_-4px_rgba(245,158,11,0.5)]' 
+                  : 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-[0_8px_20px_-4px_rgba(16,185,129,0.4)] hover:shadow-[0_10px_25px_-4px_rgba(16,185,129,0.5)]'
+              }`}
+            >
+              {isRunning ? <><Pause className="w-4 h-4 fill-current" /> SUSPEND ENGINE</> : <><Play className="w-4 h-4 fill-current" /> INITIALIZE ENGINE</>}
+            </button>
+
+            <div className="mt-5 pt-5 border-t border-slate-100">
+              <div className="flex justify-between items-center mb-3">
+                <span className="text-[13px] font-semibold text-slate-700">Simulation Fidelity Engine</span>
+              </div>
+              <button 
+                onClick={handleFidelityToggle}
+                className="w-full flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-xl hover:border-blue-400 hover:bg-blue-50/50 transition-all group shadow-sm"
+              >
+                <span className="text-xs font-mono text-slate-600 group-hover:text-blue-700 font-bold transition-colors">
+                  {fidelity === 'empirical' ? 'Empirical (CSV)' : '1st-Principles (BioGears)'}
+                </span>
+                {fidelity === 'empirical' ? <ToggleLeft className="w-6 h-6 text-slate-400" /> : <ToggleRight className="w-6 h-6 text-blue-600 drop-shadow-sm" />}
+              </button>
+            </div>
+
+            <div className="mt-4 flex justify-between text-[10px] font-mono font-bold text-slate-400 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+              <span>UPTIME: {(time / 1000).toFixed(1)}s</span>
+              <span>TICK: {TICK_RATE_MS}ms</span>
+            </div>
+          </div>
+
+          {/* What-If Parameters */}
+          <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-5 flex items-center gap-2">
+              <Sliders className="w-4 h-4 text-orange-500" /> Runtime What-If Parameters
+            </div>
+            <div className="space-y-6">
+              <div>
+                <div className="flex justify-between text-[13px] mb-2">
+                  <span className="text-slate-700 font-semibold">Airway Resistance (R_aw)</span>
+                  <span className="text-orange-600 font-bold font-mono bg-orange-50 px-2 py-0.5 rounded-md">{airwayRes} <span className="text-[10px]">cmH2O/L/s</span></span>
+                </div>
+                <input 
+                  type="range" min="1" max="20" step="1" value={airwayRes} onChange={(e) => setAirwayRes(Number(e.target.value))}
+                  className="w-full accent-orange-500 h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer hover:bg-slate-200 transition-colors"
+                />
               </div>
               <div>
-                <span className="font-extrabold text-2xl tracking-tight text-white drop-shadow-sm">Helix<span className="text-cyan-400">Twin</span></span>
-                <div className="text-[10px] text-blue-200/90 uppercase tracking-[0.25em] font-mono mt-0.5 font-semibold">L5 Co-Simulation</div>
+                <div className="flex justify-between text-[13px] mb-2">
+                  <span className="text-slate-700 font-semibold">Battery Degradation</span>
+                  <span className="text-orange-600 font-bold font-mono bg-orange-50 px-2 py-0.5 rounded-md">{battDegradation}%</span>
+                </div>
+                <input 
+                  type="range" min="0" max="80" step="5" value={battDegradation} onChange={(e) => setBattDegradation(Number(e.target.value))}
+                  className="w-full accent-orange-500 h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer hover:bg-slate-200 transition-colors"
+                />
               </div>
             </div>
           </div>
 
-          <div className="p-6 space-y-6 flex-1 overflow-y-auto custom-scrollbar">
-
-            {/* Simulation Master */}
-            <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
-              <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                <Cpu className="w-4 h-4 text-blue-500" /> Simulation Master
-              </div>
-              
+          {/* Fault Injection */}
+          <div className="bg-gradient-to-br from-red-50/50 to-white p-5 rounded-2xl border border-red-100 shadow-[0_8px_30px_rgba(239,68,68,0.05)]">
+            <div className="text-[11px] font-bold text-red-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4" /> Fault Injection
+            </div>
+            <div className="space-y-3">
               <button
-                onClick={() => setIsRunning(!isRunning)}
-                className={`w-full py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all ${
-                  isRunning 
-                    ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-[0_8px_20px_-4px_rgba(245,158,11,0.4)] hover:shadow-[0_10px_25px_-4px_rgba(245,158,11,0.5)]' 
-                    : 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-[0_8px_20px_-4px_rgba(16,185,129,0.4)] hover:shadow-[0_10px_25px_-4px_rgba(16,185,129,0.5)]'
+                onClick={() => setCoughTrigger(true)}
+                className="w-full bg-white hover:bg-red-50 border border-red-200 text-red-600 py-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-sm hover:shadow-md"
+              >
+                <Wind className="w-4 h-4" /> Trigger Patient Cough
+              </button>
+              <button
+                onClick={() => setLeakTrigger(!leakTrigger)}
+                className={`w-full py-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 border shadow-sm ${
+                  leakTrigger 
+                    ? 'bg-gradient-to-r from-red-500 to-red-600 text-white border-transparent shadow-[0_8px_20px_-4px_rgba(239,68,68,0.4)]' 
+                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:shadow-md'
                 }`}
               >
-                {isRunning ? <><Pause className="w-4 h-4 fill-current" /> SUSPEND ENGINE</> : <><Play className="w-4 h-4 fill-current" /> INITIALIZE ENGINE</>}
+                <ShieldAlert className="w-4 h-4" /> {leakTrigger ? 'ISOLATE LEAK' : 'SIMULATE AIR LEAK'}
               </button>
-
-              <div className="mt-5 pt-5 border-t border-slate-100">
-                <div className="flex justify-between items-center mb-3">
-                  <span className="text-[13px] font-semibold text-slate-700">Simulation Fidelity Engine</span>
-                </div>
-                <button 
-                  onClick={handleFidelityToggle}
-                  className="w-full flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-xl hover:border-blue-400 hover:bg-blue-50/50 transition-all group shadow-sm"
-                >
-                  <span className="text-xs font-mono text-slate-600 group-hover:text-blue-700 font-bold transition-colors">
-                    {fidelity === 'empirical' ? 'Empirical (CSV)' : '1st-Principles (BioGears)'}
-                  </span>
-                  {fidelity === 'empirical' ? <ToggleLeft className="w-6 h-6 text-slate-400" /> : <ToggleRight className="w-6 h-6 text-blue-600 drop-shadow-sm" />}
-                </button>
-              </div>
-
-              <div className="mt-4 flex justify-between text-[10px] font-mono font-bold text-slate-400 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
-                <span>UPTIME: {(time / 1000).toFixed(1)}s</span>
-                <span>TICK: {TICK_RATE_MS}ms</span>
-              </div>
-            </div>
-
-            {/* What-If Parameters */}
-            <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
-              <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-5 flex items-center gap-2">
-                <Sliders className="w-4 h-4 text-orange-500" /> Runtime What-If Parameters
-              </div>
-              <div className="space-y-6">
-                <div>
-                  <div className="flex justify-between text-[13px] mb-2">
-                    <span className="text-slate-700 font-semibold">Airway Resistance (R_aw)</span>
-                    <span className="text-orange-600 font-bold font-mono bg-orange-50 px-2 py-0.5 rounded-md">{airwayRes} <span className="text-[10px]">cmH2O/L/s</span></span>
-                  </div>
-                  <input 
-                    type="range" min="1" max="20" step="1" value={airwayRes} onChange={(e) => setAirwayRes(Number(e.target.value))}
-                    className="w-full accent-orange-500 h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer hover:bg-slate-200 transition-colors"
-                  />
-                </div>
-                <div>
-                  <div className="flex justify-between text-[13px] mb-2">
-                    <span className="text-slate-700 font-semibold">Battery Degradation</span>
-                    <span className="text-orange-600 font-bold font-mono bg-orange-50 px-2 py-0.5 rounded-md">{battDegradation}%</span>
-                  </div>
-                  <input 
-                    type="range" min="0" max="80" step="5" value={battDegradation} onChange={(e) => setBattDegradation(Number(e.target.value))}
-                    className="w-full accent-orange-500 h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer hover:bg-slate-200 transition-colors"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Fault Injection */}
-            <div className="bg-gradient-to-br from-red-50/50 to-white p-5 rounded-2xl border border-red-100 shadow-[0_8px_30px_rgba(239,68,68,0.05)]">
-              <div className="text-[11px] font-bold text-red-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4" /> Fault Injection
-              </div>
-              <div className="space-y-3">
-                <button
-                  onClick={() => setCoughTrigger(true)}
-                  className="w-full bg-white hover:bg-red-50 border border-red-200 text-red-600 py-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-sm hover:shadow-md"
-                >
-                  <Wind className="w-4 h-4" /> Trigger Patient Cough
-                </button>
-                <button
-                  onClick={() => setLeakTrigger(!leakTrigger)}
-                  className={`w-full py-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 border shadow-sm ${
-                    leakTrigger 
-                      ? 'bg-gradient-to-r from-red-500 to-red-600 text-white border-transparent shadow-[0_8px_20px_-4px_rgba(239,68,68,0.4)]' 
-                      : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:shadow-md'
-                  }`}
-                >
-                  <ShieldAlert className="w-4 h-4" /> {leakTrigger ? 'ISOLATE LEAK' : 'SIMULATE AIR LEAK'}
-                </button>
-              </div>
-            </div>
-
-            {/* Live System Status */}
-            <div className="space-y-3 font-mono text-xs">
-              <div className="flex justify-between items-center p-3.5 bg-white rounded-xl border border-slate-100 shadow-sm">
-                <span className="text-slate-500 flex items-center gap-2 font-sans font-semibold text-[13px]"><Cpu className="w-4 h-4 text-blue-400" /> F/W STATE</span>
-                <span className={`font-bold px-2.5 py-1 rounded-md text-[10px] tracking-wide ${breathPhase === 'INSPIRATION' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'}`}>{breathPhase}</span>
-              </div>
-              <div className="flex justify-between items-center p-3.5 bg-white rounded-xl border border-slate-100 shadow-sm">
-                <span className="text-slate-500 flex items-center gap-2 font-sans font-semibold text-[13px]"><Wind className="w-4 h-4 text-slate-400" /> BLOWER</span>
-                <span className="text-slate-800 font-extrabold text-sm">{Math.round(turbineSpeed)} <span className="text-[10px] text-slate-400 font-bold">RPM</span></span>
-              </div>
-              <div className="flex justify-between items-center p-3.5 bg-white rounded-xl border border-slate-100 shadow-sm">
-                <span className="text-slate-500 flex items-center gap-2 font-sans font-semibold text-[13px]"><Settings className="w-4 h-4 text-slate-400" /> VALVE</span>
-                <span className={`font-bold px-2.5 py-1 rounded-md text-[10px] tracking-wide transition-all ${
-                  valveState === 0 
-                    ? 'bg-slate-100 text-slate-500' 
-                    : (alarm === 'HIGH PRESSURE' ? 'bg-red-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.6)] animate-pulse' : 'bg-emerald-100 text-emerald-700')
-                }`}>
-                  {valveState === 0 ? 'CLOSED' : (alarm === 'HIGH PRESSURE' ? 'OPEN (EMERGENCY RELIEF)' : 'OPEN')}
-                </span>
-              </div>
-            </div>
-
-          </div>
-        </div>
-
-        {/* MAIN VISUALIZATION AREA */}
-        <div className="flex-1 flex flex-col relative overflow-hidden bg-slate-50">
-
-          {/* Deep Blue Main Telemetry Header */}
-          <div className="h-20 bg-gradient-to-r from-blue-900 via-blue-800 to-blue-900 border-b border-blue-950 flex items-center px-10 justify-between z-10 sticky top-0 shadow-lg">
-            <h1 className="text-base font-extrabold text-white flex items-center gap-3 tracking-widest drop-shadow-md">
-              <RadioReceiver className="w-5 h-5 text-cyan-400" /> MULTI-DOMAIN DIGITAL TWIN TELEMETRY
-            </h1>
-            <div className="flex items-center gap-4">
-              {alarm ? (
-                <div className="px-5 py-2 bg-red-500/20 border border-red-500/50 text-red-100 font-bold text-xs rounded-lg flex items-center gap-2 animate-pulse shadow-[0_0_20px_rgba(239,68,68,0.4)] backdrop-blur-sm">
-                  <ShieldAlert className="w-4 h-4" /> [CRITICAL] {alarm}
-                </div>
-              ) : (
-                <div className="px-4 py-1.5 bg-white/10 border border-white/20 text-blue-100 font-bold text-xs rounded-lg flex items-center gap-2 backdrop-blur-sm">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" /> SYSTEM NOMINAL
-                </div>
-              )}
             </div>
           </div>
 
-          {/* Graphs Grid */}
-          <div className="flex-1 px-10 py-8 flex flex-col gap-8 overflow-y-auto custom-scrollbar">
-            
-            <div className="flex flex-col gap-2 relative">
-              <div className="flex justify-between items-end px-1">
-                <span className="text-[13px] font-extrabold text-blue-600 flex items-center gap-2 tracking-widest uppercase">
-                  <Activity className="w-4 h-4" /> Airway Pressure
-                </span>
-                <span className="text-[11px] text-slate-400 font-mono tracking-widest font-bold bg-white px-2 py-0.5 rounded border border-slate-200">TGT: {TARGET_PIP} cmH2O</span>
-              </div>
-              <LiveChart data={pressure} color="#2563eb" min={0} max={60} label="SNSR_P_AW" unit="cmH2O" threshold={40} />
+          {/* Live System Status */}
+          <div className="space-y-3 font-mono text-xs">
+            <div className="flex justify-between items-center p-3.5 bg-white rounded-xl border border-slate-100 shadow-sm">
+              <span className="text-slate-500 flex items-center gap-2 font-sans font-semibold text-[13px]"><Cpu className="w-4 h-4 text-blue-400" /> F/W STATE</span>
+              <span className={`font-bold px-2.5 py-1 rounded-md text-[10px] tracking-wide ${breathPhase === 'INSPIRATION' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'}`}>{breathPhase}</span>
             </div>
-
-            <div className="flex flex-col gap-2 relative">
-              <div className="flex justify-between items-end px-1">
-                <span className="text-[13px] font-extrabold text-emerald-600 flex items-center gap-2 tracking-widest uppercase">
-                  <Wind className="w-4 h-4" /> Mass Air Flow
-                </span>
-              </div>
-              <LiveChart data={flow} color="#10b981" min={-80} max={80} label="SNSR_Q_FLOW" unit="L/min" />
+            <div className="flex justify-between items-center p-3.5 bg-white rounded-xl border border-slate-100 shadow-sm">
+              <span className="text-slate-500 flex items-center gap-2 font-sans font-semibold text-[13px]"><Wind className="w-4 h-4 text-slate-400" /> BLOWER</span>
+              <span className="text-slate-800 font-extrabold text-sm">{Math.round(turbineSpeed)} <span className="text-[10px] text-slate-400 font-bold">RPM</span></span>
             </div>
-
-            <div className="flex flex-col gap-2 relative">
-              <div className="flex justify-between items-end px-1">
-                <span className="text-[13px] font-extrabold text-orange-600 flex items-center gap-2 tracking-widest uppercase">
-                  <Heart className="w-4 h-4" /> Patient Lung Volume
-                </span>
-                <span className="text-[11px] text-slate-400 font-mono tracking-widest font-bold bg-white px-2 py-0.5 rounded border border-slate-200">CMPL: 50 mL/cmH2O</span>
-              </div>
-              <LiveChart data={volume} color="#f97316" min={0} max={1000} label="MDL_V_LUNG" unit="mL" />
-            </div>
-
-          </div>
-
-          {/* Terminal Event Log */}
-          <div className="h-52 border-t border-slate-200 bg-white flex flex-col font-mono shadow-[0_-10px_40px_rgba(0,0,0,0.03)] z-20">
-            <div className="px-6 py-3 bg-slate-50 border-b border-slate-100 text-[11px] font-bold text-slate-500 flex items-center justify-between uppercase tracking-widest">
-              <span className="flex items-center gap-2"><Terminal className="w-4 h-4 text-blue-600" /> System Event Log</span>
-              <span className="text-[9px] text-slate-400 bg-white px-2 py-0.5 rounded border border-slate-200 shadow-sm">Output Stream Active</span>
-            </div>
-            <div className="flex-1 p-5 overflow-y-auto text-xs space-y-2 custom-scrollbar">
-              {logs.map((l, i) => (
-                <div key={i} className="flex gap-4 hover:bg-slate-50 px-3 py-1.5 rounded-lg transition-colors border border-transparent hover:border-slate-100">
-                  <span className="text-slate-400 shrink-0 font-bold">[{l.time}]</span>
-                  <span className={
-                    l.type === 'error' ? 'text-red-600 font-bold bg-red-50 px-2 rounded' :
-                    l.type === 'warning' ? 'text-orange-600 font-semibold' :
-                    l.type === 'system' ? 'text-blue-600 font-medium' :
-                    'text-emerald-600 font-medium'
-                  }>{l.msg}</span>
-                </div>
-              ))}
-              <div className="text-slate-400 animate-pulse pl-3 font-bold">_</div>
+            <div className="flex justify-between items-center p-3.5 bg-white rounded-xl border border-slate-100 shadow-sm">
+              <span className="text-slate-500 flex items-center gap-2 font-sans font-semibold text-[13px]"><Settings className="w-4 h-4 text-slate-400" /> VALVE</span>
+              <span className={`font-bold px-2.5 py-1 rounded-md text-[10px] tracking-wide transition-all ${
+                valveState === 0 
+                  ? 'bg-slate-100 text-slate-500' 
+                  : (alarm === 'HIGH PRESSURE' ? 'bg-red-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.6)] animate-pulse' : 'bg-emerald-100 text-emerald-700')
+              }`}>
+                {valveState === 0 ? 'CLOSED' : (alarm === 'HIGH PRESSURE' ? 'OPEN (EMERGENCY RELIEF)' : 'OPEN')}
+              </span>
             </div>
           </div>
 
         </div>
+      </div>
+
+      {/* MAIN VISUALIZATION AREA */}
+      <div className="flex-1 flex flex-col relative overflow-hidden bg-slate-50 h-full">
+
+        {/* Deep Blue Main Telemetry Header */}
+        <div className="h-20 bg-gradient-to-r from-blue-900 via-blue-800 to-blue-900 border-b border-blue-950 flex items-center px-10 justify-between z-10 shrink-0 shadow-lg">
+          <h1 className="text-base font-extrabold text-white flex items-center gap-3 tracking-widest drop-shadow-md">
+            <RadioReceiver className="w-5 h-5 text-cyan-400" /> MULTI-DOMAIN DIGITAL TWIN TELEMETRY
+          </h1>
+          <div className="flex items-center gap-4">
+            {alarm ? (
+              <div className="px-5 py-2 bg-red-500/20 border border-red-500/50 text-red-100 font-bold text-xs rounded-lg flex items-center gap-2 animate-pulse shadow-[0_0_20px_rgba(239,68,68,0.4)] backdrop-blur-sm">
+                <ShieldAlert className="w-4 h-4" /> [CRITICAL] {alarm}
+              </div>
+            ) : (
+              <div className="px-4 py-1.5 bg-white/10 border border-white/20 text-blue-100 font-bold text-xs rounded-lg flex items-center gap-2 backdrop-blur-sm">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" /> SYSTEM NOMINAL
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Graphs Grid - Flex column so it stretches charts to utilize 100% of vertical space */}
+        <div className="flex-1 px-10 py-8 flex flex-col gap-6 overflow-hidden">
+          
+          <div className="flex flex-col gap-2 relative flex-1 min-h-0">
+            <div className="flex justify-between items-end px-1 shrink-0">
+              <span className="text-[13px] font-extrabold text-blue-600 flex items-center gap-2 tracking-widest uppercase">
+                <Activity className="w-4 h-4" /> Airway Pressure
+              </span>
+              <span className="text-[11px] text-slate-400 font-mono tracking-widest font-bold bg-white px-2 py-0.5 rounded border border-slate-200">TGT: {TARGET_PIP} cmH2O</span>
+            </div>
+            <LiveChart data={pressure} color="#2563eb" min={0} max={60} label="SNSR_P_AW" unit="cmH2O" threshold={40} />
+          </div>
+
+          <div className="flex flex-col gap-2 relative flex-1 min-h-0">
+            <div className="flex justify-between items-end px-1 shrink-0">
+              <span className="text-[13px] font-extrabold text-emerald-600 flex items-center gap-2 tracking-widest uppercase">
+                <Wind className="w-4 h-4" /> Mass Air Flow
+              </span>
+            </div>
+            <LiveChart data={flow} color="#10b981" min={-80} max={80} label="SNSR_Q_FLOW" unit="L/min" />
+          </div>
+
+          <div className="flex flex-col gap-2 relative flex-1 min-h-0">
+            <div className="flex justify-between items-end px-1 shrink-0">
+              <span className="text-[13px] font-extrabold text-orange-600 flex items-center gap-2 tracking-widest uppercase">
+                <Heart className="w-4 h-4" /> Patient Lung Volume
+              </span>
+              <span className="text-[11px] text-slate-400 font-mono tracking-widest font-bold bg-white px-2 py-0.5 rounded border border-slate-200">CMPL: 50 mL/cmH2O</span>
+            </div>
+            <LiveChart data={volume} color="#f97316" min={0} max={1000} label="MDL_V_LUNG" unit="mL" />
+          </div>
+
+        </div>
+
+        {/* Terminal Event Log */}
+        <div className="h-52 border-t border-slate-200 bg-white flex flex-col font-mono shadow-[0_-10px_40px_rgba(0,0,0,0.03)] z-20 shrink-0">
+          <div className="px-6 py-3 bg-slate-50 border-b border-slate-100 text-[11px] font-bold text-slate-500 flex items-center justify-between uppercase tracking-widest">
+            <span className="flex items-center gap-2"><Terminal className="w-4 h-4 text-blue-600" /> System Event Log</span>
+            <span className="text-[9px] text-slate-400 bg-white px-2 py-0.5 rounded border border-slate-200 shadow-sm">Output Stream Active</span>
+          </div>
+          <div className="flex-1 p-5 overflow-y-auto text-xs space-y-2 custom-scrollbar">
+            {logs.map((l, i) => (
+              <div key={i} className="flex gap-4 hover:bg-slate-50 px-3 py-1.5 rounded-lg transition-colors border border-transparent hover:border-slate-100">
+                <span className="text-slate-400 shrink-0 font-bold">[{l.time}]</span>
+                <span className={
+                  l.type === 'error' ? 'text-red-600 font-bold bg-red-50 px-2 rounded' :
+                  l.type === 'warning' ? 'text-orange-600 font-semibold' :
+                  l.type === 'system' ? 'text-blue-600 font-medium' :
+                  'text-emerald-600 font-medium'
+                }>{l.msg}</span>
+              </div>
+            ))}
+            <div className="text-slate-400 animate-pulse pl-3 font-bold">_</div>
+          </div>
+        </div>
+
       </div>
     </div>
   );
