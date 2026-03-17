@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   Activity, Play, Pause, AlertTriangle, Heart, Wind, Cpu, Settings,
   ShieldAlert, Terminal, Layers, Menu, ActivitySquare, Sliders,
-  Zap, ToggleLeft, ToggleRight, RadioReceiver, CheckCircle2
+  Zap, ToggleLeft, ToggleRight, RadioReceiver, CheckCircle2, Target
 } from 'lucide-react';
 
 // --- SIMULATION CONFIG ---
@@ -264,24 +264,24 @@ export default function HelixTwinL5() {
 
 
   return (
-    // Replaced the scaled box with an absolute fullscreen bleed container. No empty spaces.
     <div className="w-screen h-screen flex bg-slate-50 text-slate-800 font-sans overflow-hidden">
         
       {/* SIDEBAR: MISSION CONTROL */}
       <div className="w-[360px] bg-white border-r border-slate-200 flex flex-col z-20 shadow-[4px_0_24px_rgba(0,0,0,0.02)] flex-shrink-0 h-full">
         
-        {/* Deep Blue Premium Sidebar Header */}
-        <div className="p-6 bg-gradient-to-br from-blue-900 via-blue-800 to-blue-950 relative overflow-hidden shrink-0">
-          <div className="absolute -top-10 -right-10 w-40 h-40 bg-blue-500 rounded-full blur-[50px] opacity-30"></div>
-          <div className="flex items-center gap-4 relative z-10">
-            <div className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/20 shadow-xl">
-              <ActivitySquare className="text-white w-7 h-7" />
+        {/* Flat White Sidebar Header matching the uploaded image */}
+        <div className="h-16 flex items-center justify-between px-6 bg-white border-b border-slate-200 shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-[#ea580c] rounded flex items-center justify-center shadow-sm">
+              <Target className="text-white w-5 h-5" strokeWidth={2.5} />
             </div>
-            <div>
-              <span className="font-extrabold text-2xl tracking-tight text-white drop-shadow-sm">Helix<span className="text-cyan-400">Twin</span></span>
-              <div className="text-[10px] text-blue-200/90 uppercase tracking-[0.25em] font-mono mt-0.5 font-semibold">L5 Co-Simulation</div>
-            </div>
+            <span className="font-extrabold text-xl tracking-tight text-slate-800">
+              Helix<span className="text-[#ea580c]">Twin</span>
+            </span>
           </div>
+          <button className="text-slate-400 hover:text-slate-600 transition-colors">
+            <Menu className="w-5 h-5" />
+          </button>
         </div>
 
         <div className="p-6 space-y-6 flex-1 overflow-y-auto custom-scrollbar">
@@ -327,27 +327,27 @@ export default function HelixTwinL5() {
           {/* What-If Parameters */}
           <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
             <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-5 flex items-center gap-2">
-              <Sliders className="w-4 h-4 text-orange-500" /> Runtime What-If Parameters
+              <Sliders className="w-4 h-4 text-[#ea580c]" /> Runtime What-If Parameters
             </div>
             <div className="space-y-6">
               <div>
                 <div className="flex justify-between text-[13px] mb-2">
                   <span className="text-slate-700 font-semibold">Airway Resistance (R_aw)</span>
-                  <span className="text-orange-600 font-bold font-mono bg-orange-50 px-2 py-0.5 rounded-md">{airwayRes} <span className="text-[10px]">cmH2O/L/s</span></span>
+                  <span className="text-[#ea580c] font-bold font-mono bg-orange-50 px-2 py-0.5 rounded-md">{airwayRes} <span className="text-[10px]">cmH2O/L/s</span></span>
                 </div>
                 <input 
                   type="range" min="1" max="20" step="1" value={airwayRes} onChange={(e) => setAirwayRes(Number(e.target.value))}
-                  className="w-full accent-orange-500 h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer hover:bg-slate-200 transition-colors"
+                  className="w-full accent-[#ea580c] h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer hover:bg-slate-200 transition-colors"
                 />
               </div>
               <div>
                 <div className="flex justify-between text-[13px] mb-2">
                   <span className="text-slate-700 font-semibold">Battery Degradation</span>
-                  <span className="text-orange-600 font-bold font-mono bg-orange-50 px-2 py-0.5 rounded-md">{battDegradation}%</span>
+                  <span className="text-[#ea580c] font-bold font-mono bg-orange-50 px-2 py-0.5 rounded-md">{battDegradation}%</span>
                 </div>
                 <input 
                   type="range" min="0" max="80" step="5" value={battDegradation} onChange={(e) => setBattDegradation(Number(e.target.value))}
-                  className="w-full accent-orange-500 h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer hover:bg-slate-200 transition-colors"
+                  className="w-full accent-[#ea580c] h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer hover:bg-slate-200 transition-colors"
                 />
               </div>
             </div>
@@ -382,7 +382,7 @@ export default function HelixTwinL5() {
           <div className="space-y-3 font-mono text-xs">
             <div className="flex justify-between items-center p-3.5 bg-white rounded-xl border border-slate-100 shadow-sm">
               <span className="text-slate-500 flex items-center gap-2 font-sans font-semibold text-[13px]"><Cpu className="w-4 h-4 text-blue-400" /> F/W STATE</span>
-              <span className={`font-bold px-2.5 py-1 rounded-md text-[10px] tracking-wide ${breathPhase === 'INSPIRATION' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'}`}>{breathPhase}</span>
+              <span className={`font-bold px-2.5 py-1 rounded-md text-[10px] tracking-wide ${breathPhase === 'INSPIRATION' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-[#ea580c]'}`}>{breathPhase}</span>
             </div>
             <div className="flex justify-between items-center p-3.5 bg-white rounded-xl border border-slate-100 shadow-sm">
               <span className="text-slate-500 flex items-center gap-2 font-sans font-semibold text-[13px]"><Wind className="w-4 h-4 text-slate-400" /> BLOWER</span>
@@ -406,25 +406,25 @@ export default function HelixTwinL5() {
       {/* MAIN VISUALIZATION AREA */}
       <div className="flex-1 flex flex-col relative overflow-hidden bg-slate-50 h-full">
 
-        {/* Deep Blue Main Telemetry Header */}
-        <div className="h-20 bg-gradient-to-r from-blue-900 via-blue-800 to-blue-900 border-b border-blue-950 flex items-center px-10 justify-between z-10 shrink-0 shadow-lg">
-          <h1 className="text-base font-extrabold text-white flex items-center gap-3 tracking-widest drop-shadow-md">
-            <RadioReceiver className="w-5 h-5 text-cyan-400" /> MULTI-DOMAIN DIGITAL TWIN TELEMETRY
+        {/* Flat White Main Header matching the uploaded image */}
+        <div className="h-16 bg-white border-b border-slate-200 flex items-center px-8 justify-between z-10 shrink-0">
+          <h1 className="text-lg font-bold text-slate-800 tracking-tight">
+            Layer 5: Co-Simulation Engine
           </h1>
           <div className="flex items-center gap-4">
             {alarm ? (
-              <div className="px-5 py-2 bg-red-500/20 border border-red-500/50 text-red-100 font-bold text-xs rounded-lg flex items-center gap-2 animate-pulse shadow-[0_0_20px_rgba(239,68,68,0.4)] backdrop-blur-sm">
+              <div className="px-5 py-2 bg-red-50 border border-red-200 text-red-600 font-bold text-xs rounded-lg flex items-center gap-2 animate-pulse shadow-sm">
                 <ShieldAlert className="w-4 h-4" /> [CRITICAL] {alarm}
               </div>
             ) : (
-              <div className="px-4 py-1.5 bg-white/10 border border-white/20 text-blue-100 font-bold text-xs rounded-lg flex items-center gap-2 backdrop-blur-sm">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" /> SYSTEM NOMINAL
+              <div className="px-4 py-1.5 bg-emerald-50 border border-emerald-100 text-emerald-700 font-bold text-xs rounded-lg flex items-center gap-2 shadow-sm">
+                <CheckCircle2 className="w-4 h-4" /> SYSTEM NOMINAL
               </div>
             )}
           </div>
         </div>
 
-        {/* Graphs Grid - Flex column so it stretches charts to utilize 100% of vertical space */}
+        {/* Graphs Grid */}
         <div className="flex-1 px-10 py-8 flex flex-col gap-6 overflow-hidden">
           
           <div className="flex flex-col gap-2 relative flex-1 min-h-0">
@@ -448,12 +448,12 @@ export default function HelixTwinL5() {
 
           <div className="flex flex-col gap-2 relative flex-1 min-h-0">
             <div className="flex justify-between items-end px-1 shrink-0">
-              <span className="text-[13px] font-extrabold text-orange-600 flex items-center gap-2 tracking-widest uppercase">
+              <span className="text-[13px] font-extrabold text-[#ea580c] flex items-center gap-2 tracking-widest uppercase">
                 <Heart className="w-4 h-4" /> Patient Lung Volume
               </span>
               <span className="text-[11px] text-slate-400 font-mono tracking-widest font-bold bg-white px-2 py-0.5 rounded border border-slate-200">CMPL: 50 mL/cmH2O</span>
             </div>
-            <LiveChart data={volume} color="#f97316" min={0} max={1000} label="MDL_V_LUNG" unit="mL" />
+            <LiveChart data={volume} color="#ea580c" min={0} max={1000} label="MDL_V_LUNG" unit="mL" />
           </div>
 
         </div>
@@ -470,7 +470,7 @@ export default function HelixTwinL5() {
                 <span className="text-slate-400 shrink-0 font-bold">[{l.time}]</span>
                 <span className={
                   l.type === 'error' ? 'text-red-600 font-bold bg-red-50 px-2 rounded' :
-                  l.type === 'warning' ? 'text-orange-600 font-semibold' :
+                  l.type === 'warning' ? 'text-[#ea580c] font-semibold' :
                   l.type === 'system' ? 'text-blue-600 font-medium' :
                   'text-emerald-600 font-medium'
                 }>{l.msg}</span>
